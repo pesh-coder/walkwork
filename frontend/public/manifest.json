@@ -1,0 +1,17 @@
+{
+  "name": "Tukole",
+  "short_name": "Tukole",
+  "description": "Reliable deliveries for Kampala's online sellers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF8F3",
+  "theme_color": "#3F5D3D",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

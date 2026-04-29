@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "leaflet/dist/leaflet.css";
+
+@layer base {
+  html, body {
+    @apply bg-cream-50 text-ink-700 antialiased;
+  }
+  body {
+    background-image:
+      radial-gradient(at 0% 0%, rgba(217, 119, 87, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(63, 93, 61, 0.04) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+  /* Selection color */
+  ::selection {
+    @apply bg-terracotta-400/30 text-ink-900;
+  }
+}
+
+@layer components {
+  /* Pill button — used everywhere */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2
+           rounded-full px-5 py-2.5 text-sm font-medium
+           transition-all duration-150 ease-out
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-forest-600 text-cream-50 hover:bg-forest-700
+           shadow-soft hover:shadow-lift;
+  }
+  .btn-secondary {
+    @apply btn bg-cream-100 text-ink-700 hover:bg-cream-200
+           border border-cream-300;
+  }
+  .btn-danger {
+    @apply btn bg-terracotta-600 text-cream-50 hover:bg-terracotta-700;
+  }
+
+  /* Card surface */
+  .card {
+    @apply bg-cream-50 rounded-card border border-cream-200 shadow-soft;
+  }
+
+  /* Ledger paper — for the cash differentiator surface */
+  .ledger-paper {
+    @apply bg-ledger-paper border border-ledger-rule rounded-card;
+    background-image:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 35px,
+        rgba(220, 208, 181, 0.35) 35px,
+        rgba(220, 208, 181, 0.35) 36px
+      );
+  }
+
+  /* Status pills */
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1
+           rounded-full text-xs font-medium tracking-wide;
+  }
+  .pill-pending     { @apply pill bg-cream-200 text-ink-700; }
+  .pill-assigned    { @apply pill bg-cream-200 text-forest-700; }
+  .pill-pickedup    { @apply pill bg-cream-200 text-forest-700; }
+  .pill-delivering  { @apply pill bg-terracotta-400/15 text-terracotta-700; }
+  .pill-otp         { @apply pill bg-terracotta-400/25 text-terracotta-700; }
+  .pill-delivered   { @apply pill bg-forest-400/20 text-forest-700; }
+  .pill-settled     { @apply pill bg-forest-500 text-cream-50; }
+  .pill-failed      { @apply pill bg-terracotta-700 text-cream-50; }
+
+  /* The pulse dot for "live" markers */
+  .live-dot {
+    @apply relative inline-block w-2 h-2 rounded-full bg-terracotta-500;
+  }
+  .live-dot::after {
+    content: "";
+    @apply absolute inset-0 rounded-full bg-terracotta-500 opacity-75;
+    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+}
+
+@layer utilities {
+  /* Numeric font feature for money columns — tabular alignment */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Leaflet map container styling */
+.leaflet-container {
+  @apply rounded-card;
+  font-family: Inter, system-ui, sans-serif;
+}
+.leaflet-popup-content-wrapper {
+  @apply bg-cream-50 text-ink-700 rounded-card shadow-lift;
+}
+.leaflet-popup-tip {
+  background: #FBF8F3;
+}
