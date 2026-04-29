@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     twilio_sms_from: str = ""
 
     # Mock mode for notifications
-    mock_notifications: bool = True
+    mock_notifications: bool = True   # master switch — overrides the others
+    mock_sms: bool = False             # mock only SMS (Twilio trial-friendly)
+    mock_whatsapp: bool = False        # mock only WhatsApp
 
     # Platform economics (UGX)
     platform_fee_ugx: int = 1500

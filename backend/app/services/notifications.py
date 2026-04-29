@@ -1,11 +1,18 @@
 """
 Notification dispatcher for SMS and WhatsApp.
 
-In MOCK_NOTIFICATIONS mode (default for dev), messages are logged to the
-notifications table in memory and printed to console. This means we can
-build and demo without spending Twilio credits.
+Three modes, controlled independently via env vars:
+- MOCK_NOTIFICATIONS=true        -> both SMS and WhatsApp are mocked (default for dev)
+- MOCK_SMS=true                  -> only SMS is mocked, WhatsApp is real
+- MOCK_WHATSAPP=true             -> only WhatsApp is mocked, SMS is real
+- All three false                -> both real
 
-Switch MOCK_NOTIFICATIONS=false in production to actually send.
+This lets you ship WhatsApp live while keeping SMS mocked (useful with Twilio
+trial accounts that require recipient verification for SMS).
+
+Twilio failures NEVER crash the order flow — we log the error and return a
+mock-shaped result so the calling code is unaffected. The customer might miss
+a notification, but the order data stays consistent.
 """
 from __future__ import annotations
 
@@ -43,40 +50,57 @@ def _normalize_phone(phone: str) -> str:
     return p
 
 
+def _sms_is_mocked() -> bool:
+    return settings.mock_notifications or settings.mock_sms
+
+
+def _whatsapp_is_mocked() -> bool:
+    return settings.mock_notifications or settings.mock_whatsapp
+
+
+def _record_mock(channel: str, to: str, body: str) -> SentMessage:
+    msg = SentMessage(channel=channel, to=to, body=body, sid="MOCK")
+    MOCK_OUTBOX.append(msg)
+    icon = "📱" if channel == "sms" else "💬"
+    print(f"\n{icon} [MOCK {channel.upper()} to {to}]\n{body}\n")
+    return msg
+
+
 def send_sms(to: str, body: str) -> SentMessage:
     to = _normalize_phone(to)
-    if settings.mock_notifications:
-        msg = SentMessage(channel="sms", to=to, body=body, sid="MOCK")
-        MOCK_OUTBOX.append(msg)
-        logger.info("[MOCK SMS -> %s] %s", to, body)
-        print(f"\n📱 [MOCK SMS to {to}]\n{body}\n")
-        return msg
 
-    # Real Twilio path
-    from twilio.rest import Client  # noqa: WPS433 — local import to keep mock-mode lightweight
+    if _sms_is_mocked():
+        return _record_mock("sms", to, body)
 
-    client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-    message = client.messages.create(
-        body=body, from_=settings.twilio_sms_from, to=to
-    )
-    return SentMessage(channel="sms", to=to, body=body, sid=message.sid)
+    try:
+        from twilio.rest import Client
+        client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+        message = client.messages.create(
+            body=body, from_=settings.twilio_sms_from, to=to
+        )
+        logger.info("Sent SMS to %s (sid=%s)", to, message.sid)
+        return SentMessage(channel="sms", to=to, body=body, sid=message.sid)
+    except Exception as e:
+        # Don't crash the order flow if Twilio fails. Log and fall back to mock.
+        logger.warning("SMS send failed for %s: %s — falling back to mock", to, e)
+        return _record_mock("sms", to, f"[SEND FAILED] {body}")
 
 
 def send_whatsapp(to: str, body: str) -> SentMessage:
     to = _normalize_phone(to)
     wa_to = f"whatsapp:{to}"
 
-    if settings.mock_notifications:
-        msg = SentMessage(channel="whatsapp", to=wa_to, body=body, sid="MOCK")
-        MOCK_OUTBOX.append(msg)
-        logger.info("[MOCK WHATSAPP -> %s] %s", wa_to, body)
-        print(f"\n💬 [MOCK WhatsApp to {wa_to}]\n{body}\n")
-        return msg
+    if _whatsapp_is_mocked():
+        return _record_mock("whatsapp", wa_to, body)
 
-    from twilio.rest import Client  # noqa: WPS433
-
-    client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-    message = client.messages.create(
-        body=body, from_=settings.twilio_whatsapp_from, to=wa_to
-    )
-    return SentMessage(channel="whatsapp", to=wa_to, body=body, sid=message.sid)
+    try:
+        from twilio.rest import Client
+        client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+        message = client.messages.create(
+            body=body, from_=settings.twilio_whatsapp_from, to=wa_to
+        )
+        logger.info("Sent WhatsApp to %s (sid=%s)", wa_to, message.sid)
+        return SentMessage(channel="whatsapp", to=wa_to, body=body, sid=message.sid)
+    except Exception as e:
+        logger.warning("WhatsApp send failed for %s: %s — falling back to mock", wa_to, e)
+        return _record_mock("whatsapp", wa_to, f"[SEND FAILED] {body}")
