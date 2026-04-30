@@ -60,9 +60,9 @@ async def inbound(request: Request, db: Session = Depends(get_db)):
     if not seller:
         reply = (
             "👋 Welcome to *Tukole*!\n\n"
-            "We don't recognise this number yet. "
-            "Sign up at " + settings.public_base_url + "/seller/signup "
-            "to start sending orders."
+            "Your number isn't registered yet. "
+            "Sign up in 30 seconds at " + settings.public_base_url + "/seller/signup "
+            "— you'll get UGX 10,000 in starter credit (good for ~6 deliveries)."
         )
         send_whatsapp(seller_phone, reply)
         return PlainTextResponse(reply)
@@ -80,7 +80,7 @@ async def inbound(request: Request, db: Session = Depends(get_db)):
         reply = (
             f"⚠️ Your wallet balance is UGX {seller.wallet_balance_ugx:,}. "
             f"You need at least UGX {settings.platform_fee_ugx:,} per delivery. "
-            f"Top up here: {settings.public_base_url}/seller/wallet"
+            f"Top up from your dashboard: {settings.public_base_url}/seller/{seller.id}"
         )
         send_whatsapp(seller_phone, reply)
         return PlainTextResponse(reply)

@@ -58,6 +58,20 @@
       );
   }
 
+  /* Form inputs */
+  .input {
+    @apply w-full bg-cream-100 border border-cream-300 rounded-card
+           px-4 py-3 text-base text-ink-900 placeholder:text-ink-500/60
+           focus:outline-none focus:border-terracotta-500 focus:bg-cream-50
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  select.input {
+    @apply pr-10 appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2385391E' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m5 7 5 5 5-5'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+  }
+
   /* Status pills */
   .pill {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1

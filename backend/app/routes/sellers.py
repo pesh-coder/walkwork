@@ -2,7 +2,7 @@
 Seller routes.
 
 Endpoints:
-- POST   /sellers                       Create a seller
+- POST   /sellers                       Create a seller (with welcome credit)
 - GET    /sellers/{seller_id}           Get seller (incl. wallet balance)
 - POST   /sellers/{seller_id}/wallet    Top up wallet (mocked MoMo)
 - GET    /sellers/{seller_id}/orders    List a seller's orders
@@ -13,8 +13,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db.database import get_db
-from app.db.models import LedgerEntry, Order, Seller
+from app.db.models import LedgerEntry, LedgerEntryType, Order, Seller
 from app.db.schemas import (
     LedgerEntryOut,
     OrderOut,
@@ -23,20 +24,79 @@ from app.db.schemas import (
     WalletTopup,
 )
 from app.services import ledger as ledger_service
+from app.services.notifications import send_whatsapp
 
 router = APIRouter(prefix="/sellers", tags=["sellers"])
 
 
+# Starter wallet credit — covers ~6 first deliveries so a new seller can get
+# value from their first order without needing to top up MoMo first.
+WELCOME_CREDIT_UGX = 10_000
+
+
+def _normalize_phone(phone: str) -> str:
+    """Normalize Ugandan phone numbers to E.164 (+256...)."""
+    p = phone.strip().replace(" ", "").replace("-", "")
+    if p.startswith("0"):
+        p = "+256" + p[1:]
+    elif p.startswith("256"):
+        p = "+" + p
+    elif not p.startswith("+"):
+        p = "+" + p
+    return p
+
+
 @router.post("", response_model=SellerOut, status_code=201)
 def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
-    existing = db.query(Seller).filter(Seller.phone == payload.phone).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Seller with this phone already exists")
+    phone = _normalize_phone(payload.phone)
 
-    seller = Seller(**payload.model_dump())
+    existing = db.query(Seller).filter(Seller.phone == phone).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"This phone is already registered as {existing.business_name}.",
+        )
+
+    seller = Seller(
+        business_name=payload.business_name.strip(),
+        owner_name=payload.owner_name.strip(),
+        phone=phone,
+        email=payload.email,
+        location_area=payload.location_area,
+        wallet_balance_ugx=0,  # we'll credit via the ledger so it shows up there
+    )
     db.add(seller)
+    db.flush()
+
+    # Welcome credit — recorded as a ledger entry so it shows in the cash flow
+    ledger_service.topup_seller_wallet(
+        db, seller, WELCOME_CREDIT_UGX, external_ref="WELCOME-CREDIT"
+    )
+
     db.commit()
     db.refresh(seller)
+
+    # Send the seller their dashboard link via WhatsApp.
+    # Wrapped in try/except since we don't want a Twilio hiccup to fail signup.
+    try:
+        send_whatsapp(
+            seller.phone,
+            (
+                f"👋 Welcome to *Tukole*, {seller.owner_name.split()[0]}!\n\n"
+                f"Your *{seller.business_name}* account is ready.\n"
+                f"💰 Starter credit: UGX {WELCOME_CREDIT_UGX:,} (good for ~6 deliveries).\n\n"
+                f"📊 Your dashboard:\n{settings.public_base_url}/seller/{seller.id}\n\n"
+                f"To create an order, reply with:\n"
+                f"*Order: <area>, <customer phone>, <name>, <item> UGX <amount> <COD or MOMO>*\n\n"
+                f"Example:\n"
+                f"Order: Bukoto, 0772999888, Jane, dress UGX 85,000 COD"
+            ),
+        )
+    except Exception:
+        # The seller is created; if WhatsApp failed they'll still see their
+        # dashboard via the redirect on the frontend.
+        pass
+
     return seller
 
 

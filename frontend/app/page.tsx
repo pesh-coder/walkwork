@@ -48,6 +48,12 @@ export default function HomePage() {
           >
             Pricing
           </a>
+          <a
+            href="/seller/signup"
+            className="text-sm text-ink-700 hover:text-ink-900"
+          >
+            Sign up
+          </a>
           <button onClick={launchDemo} className="btn-primary">
             Launch demo <ArrowRight className="w-4 h-4" />
           </button>
