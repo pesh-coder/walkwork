@@ -1,20 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, AlertCircle, Phone, MapPin } from "lucide-react";
+import dynamic from "next/dynamic";
+import { ArrowLeft, Phone, MapPin, Package, AlertCircle, Camera } from "lucide-react";
 import { StatusPill } from "@/components/StatusPill";
 import {
   ordersApi, ridersApi,
-  type Order, type Rider,
+  type Order, type Rider, type Photo,
 } from "@/lib/api";
-import { ugx } from "@/lib/format";
+import { ugx, timeOnly } from "@/lib/format";
 
 const OrderMap = dynamic(() => import("@/components/OrderMap"), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full flex items-center justify-center bg-sand-100">
+    <div className="h-full w-full flex items-center justify-center bg-sand-100 rounded-card">
       <span className="text-sm text-ink-500">Loading map…</span>
     </div>
   ),
@@ -28,6 +28,7 @@ export default function RiderJobDetailPage({
   const { id, orderId } = params;
   const [order, setOrder] = useState<Order | null>(null);
   const [rider, setRider] = useState<Rider | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -38,6 +39,7 @@ export default function RiderJobDetailPage({
       ]);
       setOrder(o);
       setRider(r);
+      try { setPhotos(await ordersApi.listPhotos(orderId)); } catch {}
       setError(null);
     } catch (e: any) {
       setError(e.message);
@@ -49,14 +51,14 @@ export default function RiderJobDetailPage({
     const t = setInterval(load, 6000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, id]);
+  }, [orderId]);
 
   if (error && !order) {
     return (
       <div className="px-5 py-6">
         <div className="card p-8 max-w-md text-center mx-auto">
           <AlertCircle className="w-8 h-8 mx-auto text-coral-500" />
-          <h1 className="font-display text-xl mt-3">Job not found</h1>
+          <h1 className="font-display text-xl mt-3">Order not found</h1>
           <p className="text-ink-500 text-sm mt-1">{error}</p>
           <Link href={`/rider/${id}`} className="btn-secondary mt-4 inline-flex">
             Back to jobs
@@ -65,90 +67,77 @@ export default function RiderJobDetailPage({
       </div>
     );
   }
-
-  if (!order) {
-    return <div className="px-5 py-6 text-sm text-ink-500">Loading job…</div>;
-  }
+  if (!order) return <div className="px-5 py-6 text-sm text-ink-500">Loading…</div>;
 
   return (
     <div className="px-5 sm:px-8 py-6 max-w-3xl">
-      <Link
-        href={`/rider/${id}`}
-        className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900 mb-3"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        All jobs
+      <Link href={`/rider/${id}`} className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900 mb-3">
+        <ArrowLeft className="w-4 h-4" /> All jobs
       </Link>
 
-      <header className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <header className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+        <div>
           <div className="font-mono text-xs text-ink-500">{order.short_code}</div>
-          <h1 className="font-display text-2xl text-ink-900 truncate">
-            {order.customer_name}
-          </h1>
-          <div className="text-xs text-ink-500">
-            {order.customer_area}
-          </div>
+          <h1 className="font-display text-2xl sm:text-3xl text-ink-900 leading-tight mt-1">{order.customer_name}</h1>
+          <div className="text-sm text-ink-500 mt-1">{order.customer_area}</div>
         </div>
-        <StatusPill status={order.status} />
+        <StatusPill status={order.status} className="text-sm px-3 py-1.5" />
       </header>
 
       <section className="card overflow-hidden h-[280px] mb-4">
         <OrderMap
-          pickupLat={order.pickup_lat}
-          pickupLng={order.pickup_lng}
-          customerLat={order.customer_lat}
-          customerLng={order.customer_lng}
-          riderLat={rider?.current_lat || null}
-          riderLng={rider?.current_lng || null}
+          pickupLat={order.pickup_lat} pickupLng={order.pickup_lng}
+          customerLat={order.customer_lat} customerLng={order.customer_lng}
+          riderLat={rider?.current_lat || null} riderLng={rider?.current_lng || null}
           riderName={rider?.full_name}
-          defaultLayer="satellite"
         />
       </section>
 
-      <div className="card-coral p-3 flex items-center justify-between mb-4">
-        <div>
-          <div className="text-[11px] uppercase tracking-wider opacity-80">
-            Your earnings on this trip
+      <div className="grid sm:grid-cols-2 gap-3 mb-4">
+        <div className="card p-4">
+          <div className="text-xs uppercase tracking-wider text-ink-500 mb-2">
+            <Package className="w-3 h-3 inline mr-1" /> Item
           </div>
-          <div className="font-display text-xl tabular leading-tight">
-            {ugx(order.delivery_fee_ugx)}
-          </div>
+          <div className="text-sm text-ink-900">{order.item_description}</div>
+        </div>
+        <div className="card-coral p-4">
+          <div className="text-[11px] uppercase tracking-wider opacity-80">Your earnings</div>
+          <div className="font-display text-2xl tabular leading-tight mt-1">{ugx(order.delivery_fee_ugx)}</div>
         </div>
       </div>
 
-      <div className="card p-4 space-y-3">
-        <Detail label="Item" value={order.item_description} />
-        <Detail label="Item value" value={ugx(order.item_value_ugx)} />
+      <div className="card p-4 mb-4">
+        <div className="text-xs uppercase tracking-wider text-ink-500 mb-2">
+          <MapPin className="w-3 h-3 inline mr-1" /> Customer
+        </div>
+        <div className="text-sm font-medium text-ink-900">{order.customer_name}</div>
+        <a href={`tel:${order.customer_phone}`} className="text-sm text-teal-700 hover:underline inline-flex items-center gap-1 mt-0.5">
+          <Phone className="w-3 h-3" /> {order.customer_phone}
+        </a>
         {order.customer_address_notes && (
-          <Detail label="Notes" value={order.customer_address_notes} />
-        )}
-        <div className="flex items-center justify-between gap-3 pt-2 border-t border-sand-200">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-ink-500">
-              Customer phone
-            </div>
-            <div className="text-sm text-ink-900">{order.customer_phone}</div>
+          <div className="text-sm text-ink-700 mt-2 p-3 rounded-card bg-sand-100">
+            {order.customer_address_notes}
           </div>
-          <a href={`tel:${order.customer_phone}`} className="btn-secondary">
-            <Phone className="w-4 h-4" />
-            Call
-          </a>
-        </div>
+        )}
       </div>
 
-      <Link href={`/rider/${id}`} className="btn-primary w-full justify-center mt-4">
-        Continue this delivery
-      </Link>
-    </div>
-  );
-}
-
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <div className="text-xs uppercase tracking-wider text-ink-500">{label}</div>
-      <div className="text-sm text-ink-900">{value}</div>
+      {photos.length > 0 && (
+        <section>
+          <div className="text-xs uppercase tracking-wider text-ink-500 mb-2">
+            <Camera className="w-3 h-3 inline mr-1" /> Photos
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {photos.map((p) => (
+              <div key={p.id} className="card overflow-hidden">
+                <img src={p.image_data} alt={p.phase} className="w-full aspect-square object-cover" />
+                <div className="p-2 text-[10px] uppercase tracking-wider text-ink-500">
+                  {p.phase.replace("_", " ")} · {timeOnly(p.created_at)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

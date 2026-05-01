@@ -13,7 +13,7 @@ from sqlalchemy import inspect, text
 from app.config import settings
 from app.db.database import Base, SessionLocal, engine
 from app.db.models import Rider
-from app.routes import admin, orders, riders, sellers, whatsapp
+from app.routes import admin, fleet, orders, riders, sellers, whatsapp
 
 logger = logging.getLogger("tukole.startup")
 logger.setLevel(logging.INFO)
@@ -35,18 +35,23 @@ def _initialize_schema():
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
 
-    # Sentinel: 'customers' is a v2-only table
-    if existing_tables and "customers" not in existing_tables:
+    # Sentinels: customers (v2 escrow) and seller_riders (v2.1 vetted fleet)
+    schema_outdated = existing_tables and (
+        "customers" not in existing_tables
+        or "seller_riders" not in existing_tables
+    )
+
+    if schema_outdated:
         if settings.reset_db_on_schema_mismatch:
             logger.warning(
-                "v2 schema detected but 'customers' table missing. "
+                "Schema is outdated — required tables missing. "
                 "Dropping all tables and recreating (RESET_DB_ON_SCHEMA_MISMATCH=true)."
             )
             print("⚠️  Schema mismatch — dropping & recreating tables")
             Base.metadata.drop_all(bind=engine)
         else:
             logger.warning(
-                "v2 schema detected but 'customers' table missing. "
+                "Schema is outdated — required tables missing. "
                 "Set RESET_DB_ON_SCHEMA_MISMATCH=true to auto-migrate, "
                 "or run manual ALTER statements."
             )
@@ -134,6 +139,7 @@ def health():
 
 app.include_router(sellers.router)
 app.include_router(riders.router)
+app.include_router(fleet.router)
 app.include_router(orders.router)
 app.include_router(whatsapp.router)
 app.include_router(admin.router)

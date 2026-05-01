@@ -37,6 +37,12 @@ def _normalize_phone(phone: str) -> str:
     return p
 
 
+@router.get("", response_model=list[SellerOut])
+def list_all_sellers(db: Session = Depends(get_db)):
+    """List all sellers — used by Tukole admin for fleet management."""
+    return db.query(Seller).order_by(Seller.created_at.desc()).all()
+
+
 @router.post("", response_model=SellerOut, status_code=201)
 def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
     phone = _normalize_phone(payload.phone)

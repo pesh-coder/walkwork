@@ -118,6 +118,14 @@ class PhotoPhase(str, enum.Enum):
     CUSTOMER_DISPUTE = "customer_dispute" # Customer's photo of received item
 
 
+class FleetStatus(str, enum.Enum):
+    """The vetting status of a rider on a seller's fleet."""
+    PENDING_VETTING = "pending_vetting"  # Tukole is reviewing the rider
+    APPROVED = "approved"                 # Active member of the fleet
+    SUSPENDED = "suspended"               # Temporarily off the fleet
+    REMOVED = "removed"                   # No longer on this fleet
+
+
 # -----------------------------------------------------------------------------
 # Seller
 # -----------------------------------------------------------------------------
@@ -144,6 +152,7 @@ class Seller(Base):
 
     orders = relationship("Order", back_populates="seller")
     ledger_entries = relationship("LedgerEntry", back_populates="seller")
+    fleet_memberships = relationship("SellerRider", back_populates="seller", cascade="all, delete-orphan")
 
 
 # -----------------------------------------------------------------------------
@@ -175,6 +184,51 @@ class Rider(Base):
 
     orders = relationship("Order", back_populates="rider")
     ledger_entries = relationship("LedgerEntry", back_populates="rider")
+    fleet_memberships = relationship("SellerRider", back_populates="rider")
+
+
+# -----------------------------------------------------------------------------
+# SellerRider — the vetted-fleet association
+# -----------------------------------------------------------------------------
+class SellerRider(Base):
+    """
+    A rider's membership on a specific seller's fleet.
+
+    This is the heart of Tukole's differentiator: bodas aren't anonymous,
+    they're vetted by Tukole and dedicated to specific businesses.
+
+    A rider can be on multiple sellers' fleets (covering several shops in
+    the same area), and a seller has multiple riders covering them.
+
+    Carries metadata about the relationship — when assigned, vetting status,
+    seller-specific notes, and performance stats just for this pair.
+    """
+    __tablename__ = "seller_riders"
+
+    id = Column(String, primary_key=True, default=_uuid)
+    seller_id = Column(String, ForeignKey("sellers.id"), nullable=False, index=True)
+    rider_id = Column(String, ForeignKey("riders.id"), nullable=False, index=True)
+
+    status = Column(SAEnum(FleetStatus), default=FleetStatus.APPROVED, nullable=False)
+
+    # Tukole's notes on this assignment
+    vetting_notes = Column(Text, nullable=True)
+
+    # Seller-specific instructions for this rider
+    seller_instructions = Column(Text, nullable=True)
+
+    # Performance counters for this seller-rider pair
+    deliveries_completed = Column(Integer, default=0, nullable=False)
+    deliveries_failed = Column(Integer, default=0, nullable=False)
+
+    # Coverage area for this assignment (free text — "Bukoto + Ntinda")
+    coverage_areas = Column(String, nullable=True)
+
+    assigned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_active_at = Column(DateTime, nullable=True)
+
+    seller = relationship("Seller", back_populates="fleet_memberships")
+    rider = relationship("Rider", back_populates="fleet_memberships")
 
 
 # -----------------------------------------------------------------------------

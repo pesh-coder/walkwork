@@ -16,6 +16,7 @@ from app.db.models import (
     DisputeReason,
     DisputeVerdict,
     PhotoPhase,
+    FleetStatus,
 )
 
 
@@ -284,3 +285,42 @@ class LedgerEntryOut(BaseModel):
 class WalletTopup(BaseModel):
     amount_ugx: int = Field(gt=0)
     external_ref: Optional[str] = None
+
+
+# -----------------------------------------------------------------------------
+# Fleet (SellerRider)
+# -----------------------------------------------------------------------------
+class FleetAssignmentCreate(BaseModel):
+    rider_id: str
+    coverage_areas: Optional[str] = None
+    seller_instructions: Optional[str] = None
+    vetting_notes: Optional[str] = None
+
+
+class FleetAssignmentUpdate(BaseModel):
+    status: Optional[FleetStatus] = None
+    coverage_areas: Optional[str] = None
+    seller_instructions: Optional[str] = None
+    vetting_notes: Optional[str] = None
+
+
+class FleetAssignmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    seller_id: str
+    rider_id: str
+    status: FleetStatus
+    vetting_notes: Optional[str] = None
+    seller_instructions: Optional[str] = None
+    deliveries_completed: int
+    deliveries_failed: int
+    coverage_areas: Optional[str] = None
+    assigned_at: datetime
+    last_active_at: Optional[datetime] = None
+
+
+class FleetMemberDetail(BaseModel):
+    """Combined view: assignment + rider details for fleet management UIs."""
+    assignment: FleetAssignmentOut
+    rider: RiderOut

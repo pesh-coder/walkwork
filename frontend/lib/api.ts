@@ -160,6 +160,27 @@ export interface LedgerEntry {
   created_at: string;
 }
 
+export type FleetStatus = "pending_vetting" | "approved" | "suspended" | "removed";
+
+export interface FleetAssignment {
+  id: string;
+  seller_id: string;
+  rider_id: string;
+  status: FleetStatus;
+  vetting_notes?: string | null;
+  seller_instructions?: string | null;
+  deliveries_completed: number;
+  deliveries_failed: number;
+  coverage_areas?: string | null;
+  assigned_at: string;
+  last_active_at?: string | null;
+}
+
+export interface FleetMember {
+  assignment: FleetAssignment;
+  rider: Rider;
+}
+
 export interface Photo {
   id: string;
   phase: PhotoPhase;
@@ -199,6 +220,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 // Sellers
 // -----------------------------------------------------------------------------
 export const sellersApi = {
+  listAll: () => request<Seller[]>("/sellers"),
+
   signup: (data: {
     business_name: string;
     owner_name: string;
@@ -344,9 +367,103 @@ export const trackingApi = {
     }),
 };
 
+export const fleetApi = {
+  listFleet: (sellerId: string) =>
+    request<FleetMember[]>(`/sellers/${sellerId}/fleet`),
+
+  addToFleet: (
+    sellerId: string,
+    data: {
+      rider_id: string;
+      coverage_areas?: string;
+      seller_instructions?: string;
+      vetting_notes?: string;
+    }
+  ) =>
+    request<FleetAssignment>(`/sellers/${sellerId}/fleet`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateAssignment: (
+    sellerId: string,
+    assignmentId: string,
+    patch: { status?: FleetStatus; coverage_areas?: string; seller_instructions?: string; vetting_notes?: string }
+  ) =>
+    request<FleetAssignment>(`/sellers/${sellerId}/fleet/${assignmentId}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+
+  removeFromFleet: (sellerId: string, assignmentId: string) =>
+    request<FleetAssignment>(`/sellers/${sellerId}/fleet/${assignmentId}`, {
+      method: "DELETE",
+    }),
+
+  riderFleets: (riderId: string) =>
+    request<FleetAssignment[]>(`/riders/${riderId}/fleets`),
+};
+
 // -----------------------------------------------------------------------------
 // Admin
 // -----------------------------------------------------------------------------
+export interface AdminStats {
+  generated_at: string;
+  headline: {
+    platform_revenue_total_ugx: number;
+    platform_revenue_week_ugx: number;
+    platform_revenue_today_ugx: number;
+    gmv_total_ugx: number;
+    gmv_week_ugx: number;
+    held_in_escrow_ugx: number;
+    pending_seller_payouts_ugx: number;
+    pending_rider_payouts_ugx: number;
+  };
+  counts: {
+    sellers_total: number;
+    sellers_active_week: number;
+    riders_total: number;
+    riders_online_now: number;
+    customers_total: number;
+    orders_total: number;
+    orders_in_flight: number;
+    orders_settled: number;
+    orders_failed: number;
+    orders_disputed: number;
+    settlement_rate_pct: number;
+  };
+}
+
+export interface ActivityItem {
+  kind:
+    | "order_created"
+    | "escrow_deposit"
+    | "settled"
+    | "dispute_opened"
+    | "seller_signup"
+    | "rider_signup";
+  at: string;
+  title: string;
+  subtitle?: string;
+  amount_ugx?: number;
+  order_short_code?: string | null;
+}
+
+export interface AdminOrderRow {
+  id: string;
+  short_code: string;
+  status: string;
+  escrow_status: string;
+  customer_name: string;
+  customer_area: string;
+  item: string;
+  value_ugx: number;
+  delivery_fee_ugx: number;
+  rider: string | null;
+  seller: string | null;
+  created_at: string;
+}
+
 export const adminApi = {
   seedRiders: () =>
     request<{ ok: boolean; rider_ids: { moses: string; grace: string } }>(
@@ -357,5 +474,13 @@ export const adminApi = {
   outbox: () =>
     request<Array<{ channel: string; to: string; body: string; sent_at: string }>>(
       "/admin/outbox"
+    ),
+  stats: () => request<AdminStats>("/admin/stats"),
+  activity: (limit = 30) => request<ActivityItem[]>(`/admin/activity?limit=${limit}`),
+  allOrders: () => request<AdminOrderRow[]>("/admin/orders"),
+  showtime: (sellerId: string) =>
+    request<{ ok: boolean; created_orders: string[] }>(
+      `/admin/showtime/${sellerId}`,
+      { method: "POST" }
     ),
 };
