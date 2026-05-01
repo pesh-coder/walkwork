@@ -27,6 +27,17 @@ class Settings(BaseSettings):
     mock_sms: bool = False             # mock only SMS (Twilio trial-friendly)
     mock_whatsapp: bool = False        # mock only WhatsApp
 
+    # Demo seed phones — set these to real numbers when demoing live so the
+    # WhatsApp bot recognizes you as Sarah.
+    demo_seller_phone: str = "+256772123456"
+    demo_rider_moses_phone: str = "+256701111111"
+    demo_rider_grace_phone: str = "+256702222222"
+
+    # Schema migration — when True and an old schema is detected, drop+recreate
+    # all tables on startup. SAFE in dev/staging (we lose demo data).
+    # KEEP FALSE in production once you have real data!
+    reset_db_on_schema_mismatch: bool = True
+
     # Platform economics (UGX)
     platform_fee_ugx: int = 1500
     rider_payout_ugx: int = 3500

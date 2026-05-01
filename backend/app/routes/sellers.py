@@ -1,26 +1,21 @@
 """
 Seller routes.
-
-Endpoints:
-- POST   /sellers                       Create a seller (with welcome credit)
-- GET    /sellers/{seller_id}           Get seller (incl. wallet balance)
-- POST   /sellers/{seller_id}/wallet    Top up wallet (mocked MoMo)
-- GET    /sellers/{seller_id}/orders    List a seller's orders
-- GET    /sellers/{seller_id}/ledger    Cash flow timeline (the differentiator)
 """
 from __future__ import annotations
 
+import re
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.database import get_db
-from app.db.models import LedgerEntry, LedgerEntryType, Order, Seller
+from app.db.models import LedgerEntry, Order, Seller
 from app.db.schemas import (
     LedgerEntryOut,
     OrderOut,
     SellerCreate,
     SellerOut,
+    SellerUpdate,
     WalletTopup,
 )
 from app.services import ledger as ledger_service
@@ -28,28 +23,23 @@ from app.services.notifications import send_whatsapp
 
 router = APIRouter(prefix="/sellers", tags=["sellers"])
 
-
-# Starter wallet credit — covers ~6 first deliveries so a new seller can get
-# value from their first order without needing to top up MoMo first.
 WELCOME_CREDIT_UGX = 10_000
 
 
 def _normalize_phone(phone: str) -> str:
-    """Normalize Ugandan phone numbers to E.164 (+256...)."""
-    p = phone.strip().replace(" ", "").replace("-", "")
-    if p.startswith("0"):
+    p = re.sub(r"[\s\-()]+", "", phone or "")
+    if p.startswith("0") and len(p) >= 9:
         p = "+256" + p[1:]
     elif p.startswith("256"):
         p = "+" + p
-    elif not p.startswith("+"):
-        p = "+" + p
+    elif p.isdigit() and len(p) == 9:
+        p = "+256" + p
     return p
 
 
 @router.post("", response_model=SellerOut, status_code=201)
 def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
     phone = _normalize_phone(payload.phone)
-
     existing = db.query(Seller).filter(Seller.phone == phone).first()
     if existing:
         raise HTTPException(
@@ -63,12 +53,15 @@ def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
         phone=phone,
         email=payload.email,
         location_area=payload.location_area,
-        wallet_balance_ugx=0,  # we'll credit via the ledger so it shows up there
+        pickup_lat=payload.pickup_lat,
+        pickup_lng=payload.pickup_lng,
+        pickup_notes=payload.pickup_notes,
+        wallet_balance_ugx=0,
     )
     db.add(seller)
     db.flush()
 
-    # Welcome credit — recorded as a ledger entry so it shows in the cash flow
+    # Welcome credit (logged on the ledger so the seller can see it)
     ledger_service.topup_seller_wallet(
         db, seller, WELCOME_CREDIT_UGX, external_ref="WELCOME-CREDIT"
     )
@@ -76,25 +69,20 @@ def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(seller)
 
-    # Send the seller their dashboard link via WhatsApp.
-    # Wrapped in try/except since we don't want a Twilio hiccup to fail signup.
     try:
+        first_name = (seller.owner_name.split() or [seller.owner_name])[0]
         send_whatsapp(
             seller.phone,
             (
-                f"👋 Welcome to *Tukole*, {seller.owner_name.split()[0]}!\n\n"
+                f"👋 Welcome to *Tukole*, {first_name}!\n\n"
                 f"Your *{seller.business_name}* account is ready.\n"
-                f"💰 Starter credit: UGX {WELCOME_CREDIT_UGX:,} (good for ~6 deliveries).\n\n"
+                f"💰 Starter credit: UGX {WELCOME_CREDIT_UGX:,}\n\n"
                 f"📊 Your dashboard:\n{settings.public_base_url}/seller/{seller.id}\n\n"
-                f"To create an order, reply with:\n"
-                f"*Order: <area>, <customer phone>, <name>, <item> UGX <amount> <COD or MOMO>*\n\n"
-                f"Example:\n"
-                f"Order: Bukoto, 0772999888, Jane, dress UGX 85,000 COD"
+                f"From there you can create orders, see your bodas live on the map, "
+                f"and track your earnings."
             ),
         )
     except Exception:
-        # The seller is created; if WhatsApp failed they'll still see their
-        # dashboard via the redirect on the frontend.
         pass
 
     return seller
@@ -102,53 +90,63 @@ def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
 
 @router.get("/{seller_id}", response_model=SellerOut)
 def get_seller(seller_id: str, db: Session = Depends(get_db)):
-    seller = db.query(Seller).filter(Seller.id == seller_id).first()
-    if not seller:
+    s = db.query(Seller).filter(Seller.id == seller_id).first()
+    if not s:
         raise HTTPException(status_code=404, detail="Seller not found")
-    return seller
+    return s
 
 
 @router.get("/by-phone/{phone}", response_model=SellerOut)
 def get_seller_by_phone(phone: str, db: Session = Depends(get_db)):
-    """Used by WhatsApp webhook to look up the seller from the From number."""
-    seller = db.query(Seller).filter(Seller.phone == phone).first()
-    if not seller:
+    p = _normalize_phone(phone)
+    s = db.query(Seller).filter(Seller.phone == p).first()
+    if not s:
         raise HTTPException(status_code=404, detail="Seller not found")
-    return seller
+    return s
+
+
+@router.patch("/{seller_id}", response_model=SellerOut)
+def update_seller(seller_id: str, payload: SellerUpdate, db: Session = Depends(get_db)):
+    s = db.query(Seller).filter(Seller.id == seller_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    data = payload.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(s, k, v)
+    db.commit()
+    db.refresh(s)
+    return s
 
 
 @router.post("/{seller_id}/wallet", response_model=SellerOut)
 def topup_wallet(seller_id: str, payload: WalletTopup, db: Session = Depends(get_db)):
-    seller = db.query(Seller).filter(Seller.id == seller_id).first()
-    if not seller:
+    s = db.query(Seller).filter(Seller.id == seller_id).first()
+    if not s:
         raise HTTPException(status_code=404, detail="Seller not found")
-
     ledger_service.topup_seller_wallet(
-        db, seller, payload.amount_ugx, external_ref=payload.external_ref
+        db, s, payload.amount_ugx, external_ref=payload.external_ref
     )
     db.commit()
-    db.refresh(seller)
-    return seller
+    db.refresh(s)
+    return s
 
 
 @router.get("/{seller_id}/orders", response_model=list[OrderOut])
 def list_orders(seller_id: str, db: Session = Depends(get_db)):
-    orders = (
+    return (
         db.query(Order)
         .filter(Order.seller_id == seller_id)
         .order_by(Order.created_at.desc())
         .all()
     )
-    return orders
 
 
 @router.get("/{seller_id}/ledger", response_model=list[LedgerEntryOut])
 def list_ledger(seller_id: str, db: Session = Depends(get_db)):
-    entries = (
+    return (
         db.query(LedgerEntry)
         .filter(LedgerEntry.seller_id == seller_id)
         .order_by(LedgerEntry.created_at.desc())
         .limit(200)
         .all()
     )
-    return entries

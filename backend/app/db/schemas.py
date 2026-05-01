@@ -1,5 +1,5 @@
 """
-Pydantic schemas for API requests and responses.
+Pydantic schemas for the API.
 """
 from __future__ import annotations
 
@@ -8,7 +8,15 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 
-from app.db.models import OrderStatus, PaymentMode, CashStatus, LedgerEntryType
+from app.db.models import (
+    OrderStatus,
+    EscrowStatus,
+    PaymentMethod,
+    LedgerEntryType,
+    DisputeReason,
+    DisputeVerdict,
+    PhotoPhase,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -20,6 +28,9 @@ class SellerCreate(BaseModel):
     phone: str
     email: Optional[str] = None
     location_area: Optional[str] = None
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
+    pickup_notes: Optional[str] = None
 
 
 class SellerOut(BaseModel):
@@ -29,9 +40,22 @@ class SellerOut(BaseModel):
     business_name: str
     owner_name: str
     phone: str
+    email: Optional[str] = None
     location_area: Optional[str] = None
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
+    pickup_notes: Optional[str] = None
     wallet_balance_ugx: int
     created_at: datetime
+
+
+class SellerUpdate(BaseModel):
+    business_name: Optional[str] = None
+    owner_name: Optional[str] = None
+    location_area: Optional[str] = None
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
+    pickup_notes: Optional[str] = None
 
 
 # -----------------------------------------------------------------------------
@@ -44,6 +68,7 @@ class RiderCreate(BaseModel):
     plate_number: Optional[str] = None
     stage: Optional[str] = None
     chairman_reference: Optional[str] = None
+    photo_url: Optional[str] = None
 
 
 class RiderOut(BaseModel):
@@ -52,13 +77,16 @@ class RiderOut(BaseModel):
     id: str
     full_name: str
     phone: str
+    nin: Optional[str] = None
     plate_number: Optional[str] = None
-    stage: Optional[str] = None
     photo_url: Optional[str] = None
+    stage: Optional[str] = None
+    is_active: bool
     is_available: bool
     current_lat: Optional[float] = None
     current_lng: Optional[float] = None
-    cash_float_ugx: int
+    last_location_at: Optional[datetime] = None
+    wallet_balance_ugx: int
 
 
 class RiderLocationUpdate(BaseModel):
@@ -67,22 +95,34 @@ class RiderLocationUpdate(BaseModel):
 
 
 # -----------------------------------------------------------------------------
+# Customer
+# -----------------------------------------------------------------------------
+class CustomerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    phone: str
+    name: Optional[str] = None
+    last_lat: Optional[float] = None
+    last_lng: Optional[float] = None
+    last_plus_code: Optional[str] = None
+    last_landmark_notes: Optional[str] = None
+    last_area: Optional[str] = None
+    delivery_count: int
+    created_at: datetime
+
+
+# -----------------------------------------------------------------------------
 # Order
 # -----------------------------------------------------------------------------
 class OrderCreate(BaseModel):
-    seller_id: str
     customer_name: str
     customer_phone: str
     customer_area: str
     customer_address_notes: Optional[str] = None
-    customer_lat: Optional[float] = None
-    customer_lng: Optional[float] = None
     item_description: str
     item_value_ugx: int = Field(gt=0)
-    payment_mode: PaymentMode
-    pickup_area: Optional[str] = None
-    pickup_lat: Optional[float] = None
-    pickup_lng: Optional[float] = None
+    delivery_fee_ugx: Optional[int] = Field(default=None, gt=0)
 
 
 class OrderOut(BaseModel):
@@ -92,53 +132,138 @@ class OrderOut(BaseModel):
     short_code: str
     seller_id: str
     rider_id: Optional[str] = None
+    customer_id: Optional[str] = None
+
     customer_name: str
     customer_phone: str
     customer_area: str
     customer_address_notes: Optional[str] = None
     customer_lat: Optional[float] = None
     customer_lng: Optional[float] = None
+    customer_plus_code: Optional[str] = None
+    customer_pin_confirmed_at: Optional[datetime] = None
+
     pickup_area: Optional[str] = None
     pickup_lat: Optional[float] = None
     pickup_lng: Optional[float] = None
+
     item_description: str
     item_value_ugx: int
-    payment_mode: PaymentMode
-    cash_status: CashStatus
+    delivery_fee_ugx: int
+    commission_rate_bps: int
+    platform_fee_ugx: int
+
+    escrow_status: EscrowStatus
+    escrow_paid_at: Optional[datetime] = None
+    escrow_released_at: Optional[datetime] = None
+    payment_method: Optional[PaymentMethod] = None
+
     status: OrderStatus
     failure_reason: Optional[str] = None
+
     created_at: datetime
     assigned_at: Optional[datetime] = None
     picked_up_at: Optional[datetime] = None
+    arrived_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
     settled_at: Optional[datetime] = None
 
 
 class OrderTrackOut(BaseModel):
-    """Public tracking view — no sensitive data, what the customer sees."""
+    """Public tracking view for the customer webview."""
     short_code: str
     status: OrderStatus
+    escrow_status: EscrowStatus
+
+    seller_business_name: Optional[str] = None
+
     rider_name: Optional[str] = None
     rider_phone: Optional[str] = None
     rider_plate: Optional[str] = None
     rider_lat: Optional[float] = None
     rider_lng: Optional[float] = None
+
     customer_lat: Optional[float] = None
     customer_lng: Optional[float] = None
+    customer_plus_code: Optional[str] = None
+    customer_pin_confirmed: bool = False
+
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
+
     item_description: str
+    item_value_ugx: int
+    delivery_fee_ugx: int
+    total_charge_ugx: int
+
     estimated_minutes: Optional[int] = None
+    otp_code: Optional[str] = None  # only shown to the customer once paid
 
 
 class OTPVerify(BaseModel):
     otp_code: str
 
 
-class CashConfirm(BaseModel):
-    confirmed: bool
+class CustomerPinUpdate(BaseModel):
+    """Customer dropping their pin on the tracking webview."""
+    lat: float
+    lng: float
+    plus_code: Optional[str] = None
+    landmark_photo: Optional[str] = None       # base64 data URL
+    landmark_notes: Optional[str] = None
+
+
+class MockPaymentRequest(BaseModel):
+    method: PaymentMethod = PaymentMethod.MOCK
+
+
+class CustomerApproval(BaseModel):
+    approved: bool
 
 
 class FailDelivery(BaseModel):
     reason: str
+
+
+# -----------------------------------------------------------------------------
+# Photo upload
+# -----------------------------------------------------------------------------
+class PhotoUpload(BaseModel):
+    phase: PhotoPhase
+    image_data: str       # base64 data URL
+    caption: Optional[str] = None
+
+
+class PhotoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    phase: PhotoPhase
+    image_data: str
+    caption: Optional[str] = None
+    created_at: datetime
+
+
+# -----------------------------------------------------------------------------
+# Dispute
+# -----------------------------------------------------------------------------
+class DisputeOpen(BaseModel):
+    reason: DisputeReason
+    customer_message: Optional[str] = None
+
+
+class DisputeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    order_id: str
+    reason: DisputeReason
+    customer_message: Optional[str] = None
+    seller_message: Optional[str] = None
+    verdict: DisputeVerdict
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
 
 
 # -----------------------------------------------------------------------------
@@ -159,13 +284,3 @@ class LedgerEntryOut(BaseModel):
 class WalletTopup(BaseModel):
     amount_ugx: int = Field(gt=0)
     external_ref: Optional[str] = None
-
-
-# -----------------------------------------------------------------------------
-# WhatsApp inbound
-# -----------------------------------------------------------------------------
-class WhatsAppInbound(BaseModel):
-    """Mirror of Twilio's inbound webhook payload (the bits we care about)."""
-    From: str  # noqa: N815 — Twilio uses this casing
-    Body: str  # noqa: N815
-    MessageSid: Optional[str] = None  # noqa: N815
