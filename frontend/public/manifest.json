@@ -1,16 +1,30 @@
 {
-  "name": "Tukole",
+  "name": "Tukole — Trusted deliveries for Kampala",
   "short_name": "Tukole",
   "description": "Escrow-secured deliveries for Kampala's online sellers.",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#FBF6F0",
   "theme_color": "#0E6B6B",
+  "categories": ["business", "shopping", "productivity"],
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

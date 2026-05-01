@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Bike, Plus, Search, X, Check, AlertCircle, Loader2,
-  ShieldCheck, MoreVertical, Trash2, MapPin,
+  ShieldCheck, MoreVertical, Trash2, MapPin, ExternalLink,
 } from "lucide-react";
 import {
   ridersApi, sellersApi, fleetApi,
@@ -252,10 +252,22 @@ function FleetForSeller({
               {seller.owner_name} · {seller.location_area || "—"} · {seller.phone}
             </div>
           </div>
-          <button onClick={() => setShowAdd(true)} className="btn-coral">
-            <Plus className="w-4 h-4" />
-            Assign rider
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href={`/seller/${seller.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-secondary text-xs"
+              title="Open this seller's dashboard"
+            >
+              <ExternalLink className="w-3 h-3" />
+              View as seller
+            </a>
+            <button onClick={() => setShowAdd(true)} className="btn-coral">
+              <Plus className="w-4 h-4" />
+              Assign rider
+            </button>
+          </div>
         </div>
       </div>
 
@@ -417,13 +429,24 @@ function FleetMemberCard({
           </div>
         </div>
 
-        <button
-          onClick={onRemove}
-          className="btn-ghost p-1.5 text-ink-500 hover:text-coral-600"
-          title="Remove from fleet"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex flex-col gap-1 shrink-0">
+          <a
+            href={`/rider/${rider.id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-ghost p-1.5 text-ink-500 hover:text-teal-700"
+            title="Open this rider's app in a new tab"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <button
+            onClick={onRemove}
+            className="btn-ghost p-1.5 text-ink-500 hover:text-coral-600"
+            title="Remove from fleet"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </motion.div>
   );
