@@ -6,31 +6,28 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { sellersApi } from "@/lib/api";
 
 const KAMPALA_AREAS = [
   "Bukoto", "Ntinda", "Kololo", "Kamwokya", "Nakawa", "Kabalagala",
-  "Muyenga", "Bugolobi", "Naguru", "Mbuya", "Najjera", "Kira",
+  "Bugolobi", "Muyenga", "Naguru", "Mbuya", "Najjera", "Kira",
   "Mengo", "Rubaga", "Kawempe", "Makindye", "Wandegeya", "Nakulabye",
-  "Other",
+  "Kansanga", "Katwe", "Other",
 ];
 
-export default function SignupPage() {
+export default function SellerSignupPage() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ id: string; phone: string } | null>(null);
+  const [done, setDone] = useState<string | null>(null);
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [phone, setPhone] = useState("");
   const [area, setArea] = useState("");
 
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
-  async function handleSubmit() {
+  async function submit() {
     setError(null);
-
-    // Light client-side validation
     if (!businessName.trim()) return setError("Business name is required.");
     if (!ownerName.trim()) return setError("Your name is required.");
     if (!phone.trim()) return setError("Phone number is required.");
@@ -38,27 +35,14 @@ export default function SignupPage() {
 
     setBusy(true);
     try {
-      const res = await fetch(`${apiBase}/sellers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          business_name: businessName.trim(),
-          owner_name: ownerName.trim(),
-          phone: phone.trim(),
-          location_area: area === "Other" ? null : area,
-        }),
+      const seller = await sellersApi.signup({
+        business_name: businessName.trim(),
+        owner_name: ownerName.trim(),
+        phone: phone.trim(),
+        location_area: area === "Other" ? undefined : area,
       });
-
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.detail || `Sign up failed (${res.status})`);
-      }
-
-      const data = await res.json();
-      setDone({ id: data.id, phone: data.phone });
-
-      // Auto-redirect after a short success moment
-      setTimeout(() => router.push(`/seller/${data.id}`), 1800);
+      setDone(seller.id);
+      setTimeout(() => router.push(`/seller/${seller.id}`), 1800);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -74,16 +58,16 @@ export default function SignupPage() {
           animate={{ opacity: 1, y: 0 }}
           className="card p-8 max-w-md w-full text-center"
         >
-          <div className="w-12 h-12 rounded-full bg-forest-500/15 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-7 h-7 text-forest-600" />
+          <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-7 h-7 text-teal-600" />
           </div>
           <h1 className="font-display text-2xl text-ink-900 mt-4">
             Welcome to Tukole
           </h1>
           <p className="text-ink-500 text-sm mt-2">
-            Check your WhatsApp — we've sent your dashboard link and bot instructions.
+            Check your WhatsApp — we've sent your dashboard link.
           </p>
-          <p className="text-ink-500 text-xs mt-4">Redirecting to your dashboard…</p>
+          <p className="text-ink-500 text-xs mt-4">Redirecting…</p>
         </motion.div>
       </main>
     );
@@ -92,8 +76,8 @@ export default function SignupPage() {
   return (
     <main className="min-h-screen">
       <header className="px-5 sm:px-8 pt-6">
-        <Link href="/" className="inline-block">
-          <Logo size="md" />
+        <Link href="/">
+          <Logo size="md" variant="teal" />
         </Link>
       </header>
 
@@ -103,15 +87,15 @@ export default function SignupPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-terracotta-400/15 text-terracotta-700 text-xs font-medium">
-            Free to start · UGX 10,000 starter credit
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-chip bg-coral-100 text-coral-700 text-xs font-medium">
+            UGX 10,000 starter credit
           </div>
           <h1 className="mt-5 font-display text-4xl sm:text-5xl text-ink-900 leading-[1.05] tracking-tight">
-            Create your <em className="text-terracotta-600 not-italic">Tukole</em> account
+            Set up your <em className="text-teal-600 not-italic">Tukole</em> shop
           </h1>
           <p className="mt-4 text-ink-700">
-            Tell us a bit about your business. You'll be sending orders from
-            WhatsApp in under a minute.
+            Tell us about your business — under a minute. Your dashboard will be
+            ready as soon as you finish.
           </p>
         </motion.div>
 
@@ -121,74 +105,58 @@ export default function SignupPage() {
           transition={{ duration: 0.4, delay: 0.1 }}
           className="card p-6 sm:p-8 mt-8 space-y-5"
         >
-          <Field
-            label="Business name"
-            hint="This is what your customers see on the tracking page."
-          >
+          <Field label="Business name" hint="What your customers see on the tracking page.">
             <input
-              type="text"
-              value={businessName}
+              type="text" value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
               placeholder="Sarah's Closet"
-              className="input"
-              disabled={busy}
+              className="input" disabled={busy}
             />
           </Field>
 
           <Field label="Your name">
             <input
-              type="text"
-              value={ownerName}
+              type="text" value={ownerName}
               onChange={(e) => setOwnerName(e.target.value)}
               placeholder="Sarah Namugga"
-              className="input"
-              disabled={busy}
+              className="input" disabled={busy}
             />
           </Field>
 
           <Field
             label="WhatsApp number"
-            hint="This is the number you'll send orders from. Use the same one connected to your WhatsApp."
+            hint="We'll send your dashboard link here. Use the same number you use on WhatsApp."
           >
             <input
-              type="tel"
-              value={phone}
+              type="tel" inputMode="tel" value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="0772 123 456 or +256 772 123 456"
-              className="input"
-              disabled={busy}
-              inputMode="tel"
+              placeholder="0772 123 456"
+              className="input" disabled={busy}
             />
           </Field>
 
           <Field label="Where are you based?">
             <select
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              className="input"
-              disabled={busy}
+              value={area} onChange={(e) => setArea(e.target.value)}
+              className="input" disabled={busy}
             >
               <option value="">Pick an area…</option>
               {KAMPALA_AREAS.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
+                <option key={a} value={a}>{a}</option>
               ))}
             </select>
           </Field>
 
           {error && (
-            <div className="card p-3 bg-terracotta-400/10 border-terracotta-400/30 text-sm text-terracotta-700 flex items-start gap-2">
+            <div className="card p-3 bg-coral-50 border-coral-200 text-sm text-coral-700 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <button
-            type="button"
-            disabled={busy}
-            onClick={handleSubmit}
-            className="btn-primary w-full justify-center text-base py-3"
+            type="button" disabled={busy} onClick={submit}
+            className="btn-coral w-full justify-center text-base py-3"
           >
             {busy ? (
               <>
@@ -204,14 +172,13 @@ export default function SignupPage() {
 
           <p className="text-xs text-ink-500 text-center pt-2">
             By creating an account you agree to our terms.
-            We'll send your dashboard link to your WhatsApp.
           </p>
         </motion.div>
 
         <p className="text-sm text-ink-500 mt-6 text-center">
-          Already have an account?{" "}
-          <Link href="/" className="text-forest-600 hover:underline">
-            Go to home
+          Are you a boda rider?{" "}
+          <Link href="/rider/signup" className="text-teal-700 hover:underline">
+            Sign up here
           </Link>
         </p>
       </section>
@@ -226,9 +193,9 @@ function Field({
 }) {
   return (
     <label className="block">
-      <div className="text-sm font-medium text-ink-900">{label}</div>
-      {hint && <div className="text-xs text-ink-500 mt-0.5">{hint}</div>}
-      <div className="mt-2">{children}</div>
+      <div className="field-label">{label}</div>
+      {hint && <div className="field-hint mb-2">{hint}</div>}
+      <div>{children}</div>
     </label>
   );
 }

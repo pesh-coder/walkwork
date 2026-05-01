@@ -2,20 +2,22 @@
  * Formatting helpers used across the UI.
  */
 
-import type { OrderStatus, PaymentMode, LedgerEntryType } from "./api";
+import type {
+  EscrowStatus,
+  LedgerEntryType,
+  OrderStatus,
+} from "./api";
 
-/** Format UGX with thousands separators and currency. */
-export function ugx(amount: number): string {
+/** UGX with thousands separators and currency. */
+export function ugx(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) return "—";
   return `UGX ${amount.toLocaleString("en-UG")}`;
 }
 
-/** Short numeric form: 85,000 (no UGX prefix). */
 export function num(amount: number): string {
   return amount.toLocaleString("en-UG");
 }
 
-/** Time only: 2:43 PM */
 export function timeOnly(iso: string | null | undefined): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleTimeString("en-UG", {
@@ -25,14 +27,19 @@ export function timeOnly(iso: string | null | undefined): string {
   });
 }
 
-/** Date and time: Apr 29, 2:43 PM */
 export function dateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return `${d.toLocaleDateString("en-UG", { month: "short", day: "numeric" })}, ${d.toLocaleTimeString("en-UG", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+  return `${d.toLocaleDateString("en-UG", {
+    month: "short",
+    day: "numeric",
+  })}, ${d.toLocaleTimeString("en-UG", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })}`;
 }
 
-/** Relative time: "2 minutes ago" */
 export function relTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const ms = Date.now() - new Date(iso).getTime();
@@ -46,71 +53,104 @@ export function relTime(iso: string | null | undefined): string {
   return `${day}d ago`;
 }
 
-/** Friendly status labels. */
+/** Status labels (sentence-case for the customer/seller) */
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: "Pending",
+  awaiting_payment: "Awaiting payment",
+  paid_into_escrow: "Funds secured",
   assigned: "Rider assigned",
   picked_up: "Picked up",
   delivering: "On the way",
-  otp_pending: "Awaiting OTP",
+  at_customer: "At your door",
   delivered: "Delivered",
+  approved: "Approved",
   settled: "Settled",
+  disputed: "Disputed",
+  refunded: "Refunded",
   failed: "Failed",
 };
 
 export const STATUS_PILL_CLASS: Record<OrderStatus, string> = {
   pending: "pill-pending",
+  awaiting_payment: "pill-awaiting",
+  paid_into_escrow: "pill-paid",
   assigned: "pill-assigned",
   picked_up: "pill-pickedup",
   delivering: "pill-delivering",
-  otp_pending: "pill-otp",
+  at_customer: "pill-atcustomer",
   delivered: "pill-delivered",
+  approved: "pill-approved",
   settled: "pill-settled",
+  disputed: "pill-disputed",
+  refunded: "pill-refunded",
   failed: "pill-failed",
 };
 
-export const PAYMENT_LABEL: Record<PaymentMode, string> = {
-  momo: "Mobile Money",
-  cod: "Cash on Delivery",
+export const ESCROW_LABEL: Record<EscrowStatus, string> = {
+  none: "Not yet paid",
+  held: "Held in escrow",
+  released: "Released",
+  refunded: "Refunded",
+  partial: "Partial",
 };
 
 export const LEDGER_LABEL: Record<LedgerEntryType, string> = {
+  escrow_deposit: "Customer payment",
+  escrow_release_seller: "Sale proceeds",
+  escrow_release_rider: "Rider earnings",
+  escrow_release_platform: "Platform fee",
+  escrow_refund: "Customer refund",
   seller_wallet_topup: "Wallet top-up",
-  platform_fee: "Delivery fee",
-  rider_earning: "Rider payout",
-  cod_collected: "Cash collected",
-  cod_deposited: "Cash deposited to MoMo",
-  seller_payout: "Paid to your wallet",
-  refund: "Refund",
+  seller_wallet_withdraw: "Withdrawal to MoMo",
+  rider_wallet_withdraw: "Withdrawal to MoMo",
+  penalty: "Return-delivery penalty",
 };
 
-/** Sign for ledger display: + means money in for the seller. */
-export function ledgerSign(type: LedgerEntryType): "+" | "-" | "" {
+/** + means money in for the seller, − money out, blank for transit-only entries. */
+export function ledgerSign(type: LedgerEntryType): "+" | "−" | "" {
   switch (type) {
     case "seller_wallet_topup":
-    case "seller_payout":
+    case "escrow_release_seller":
       return "+";
-    case "platform_fee":
-    case "refund":
-      return "-";
-    case "cod_collected":
-    case "cod_deposited":
-      return "";
+    case "seller_wallet_withdraw":
+    case "rider_wallet_withdraw":
+    case "penalty":
+    case "escrow_refund":
+      return "−";
     default:
       return "";
   }
 }
 
-/** Color hint for ledger row. */
 export function ledgerColor(type: LedgerEntryType): "credit" | "debit" | "neutral" {
   switch (type) {
     case "seller_wallet_topup":
-    case "seller_payout":
+    case "escrow_release_seller":
+    case "escrow_release_rider":
       return "credit";
-    case "platform_fee":
-    case "refund":
+    case "seller_wallet_withdraw":
+    case "rider_wallet_withdraw":
+    case "penalty":
+    case "escrow_refund":
       return "debit";
     default:
       return "neutral";
   }
+}
+
+/** Whether an order is "live" — moving through the flow, worth highlighting. */
+export function isInFlight(status: OrderStatus): boolean {
+  return [
+    "awaiting_payment",
+    "paid_into_escrow",
+    "assigned",
+    "picked_up",
+    "delivering",
+    "at_customer",
+    "delivered",
+  ].includes(status);
+}
+
+export function isTerminal(status: OrderStatus): boolean {
+  return ["settled", "refunded", "failed"].includes(status);
 }

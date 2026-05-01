@@ -6,46 +6,87 @@
 
 @layer base {
   html, body {
-    @apply bg-cream-50 text-ink-700 antialiased;
+    @apply bg-sand-50 text-ink-700 antialiased;
   }
   body {
     background-image:
-      radial-gradient(at 0% 0%, rgba(217, 119, 87, 0.04) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(63, 93, 61, 0.04) 0px, transparent 50%);
+      radial-gradient(at 0% 0%,   rgba(14, 107, 107, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(255, 123, 58, 0.03) 0px, transparent 50%);
     background-attachment: fixed;
   }
-  /* Selection color */
   ::selection {
-    @apply bg-terracotta-400/30 text-ink-900;
+    @apply bg-coral-200 text-ink-900;
   }
 }
 
 @layer components {
-  /* Pill button — used everywhere */
+  /* === Buttons === */
   .btn {
     @apply inline-flex items-center justify-center gap-2
-           rounded-full px-5 py-2.5 text-sm font-medium
+           rounded-chip px-5 py-2.5 text-sm font-medium
            transition-all duration-150 ease-out
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-forest-600 text-cream-50 hover:bg-forest-700
+    @apply btn bg-teal-600 text-sand-50 hover:bg-teal-700
+           shadow-soft hover:shadow-lift;
+  }
+  .btn-coral {
+    @apply btn bg-coral-500 text-sand-50 hover:bg-coral-600
            shadow-soft hover:shadow-lift;
   }
   .btn-secondary {
-    @apply btn bg-cream-100 text-ink-700 hover:bg-cream-200
-           border border-cream-300;
+    @apply btn bg-sand-100 text-ink-700 hover:bg-sand-200
+           border border-sand-200;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-700 hover:bg-sand-100;
   }
   .btn-danger {
-    @apply btn bg-terracotta-600 text-cream-50 hover:bg-terracotta-700;
+    @apply btn bg-coral-600 text-sand-50 hover:bg-coral-700;
   }
 
-  /* Card surface */
+  /* === Cards === */
   .card {
-    @apply bg-cream-50 rounded-card border border-cream-200 shadow-soft;
+    @apply bg-sand-50 rounded-card border border-sand-200 shadow-soft;
+  }
+  .card-elevated {
+    @apply card shadow-lift;
+  }
+  .card-teal {
+    @apply rounded-card bg-teal-700 text-sand-50 border border-teal-700 shadow-lift;
+  }
+  .card-coral {
+    @apply rounded-card bg-coral-500 text-sand-50 border border-coral-500 shadow-lift;
   }
 
-  /* Ledger paper — for the cash differentiator surface */
+  /* === Form inputs === */
+  .input {
+    @apply w-full bg-sand-100 border border-sand-200 rounded-card
+           px-4 py-3 text-base text-ink-900 placeholder:text-ink-500/60
+           focus:outline-none focus:border-teal-500 focus:bg-sand-50
+           focus:shadow-ring
+           transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  select.input {
+    @apply pr-10 appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%230E6B6B' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m5 7 5 5 5-5'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+  }
+  textarea.input {
+    @apply min-h-[80px] py-2;
+  }
+
+  /* === Field label === */
+  .field-label {
+    @apply block text-sm font-medium text-ink-900 mb-1;
+  }
+  .field-hint {
+    @apply text-xs text-ink-500 mt-1;
+  }
+
+  /* === Ledger paper === */
   .ledger-paper {
     @apply bg-ledger-paper border border-ledger-rule rounded-card;
     background-image:
@@ -53,65 +94,90 @@
         to bottom,
         transparent 0,
         transparent 35px,
-        rgba(220, 208, 181, 0.35) 35px,
-        rgba(220, 208, 181, 0.35) 36px
+        rgba(235, 223, 204, 0.4) 35px,
+        rgba(235, 223, 204, 0.4) 36px
       );
   }
 
-  /* Form inputs */
-  .input {
-    @apply w-full bg-cream-100 border border-cream-300 rounded-card
-           px-4 py-3 text-base text-ink-900 placeholder:text-ink-500/60
-           focus:outline-none focus:border-terracotta-500 focus:bg-cream-50
-           transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  select.input {
-    @apply pr-10 appearance-none bg-no-repeat;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2385391E' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m5 7 5 5 5-5'/%3E%3C/svg%3E");
-    background-position: right 0.75rem center;
-    background-size: 1.25rem;
-  }
-
-  /* Status pills */
+  /* === Status pills === */
   .pill {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1
-           rounded-full text-xs font-medium tracking-wide;
+           rounded-chip text-xs font-medium tracking-wide;
   }
-  .pill-pending     { @apply pill bg-cream-200 text-ink-700; }
-  .pill-assigned    { @apply pill bg-cream-200 text-forest-700; }
-  .pill-pickedup    { @apply pill bg-cream-200 text-forest-700; }
-  .pill-delivering  { @apply pill bg-terracotta-400/15 text-terracotta-700; }
-  .pill-otp         { @apply pill bg-terracotta-400/25 text-terracotta-700; }
-  .pill-delivered   { @apply pill bg-forest-400/20 text-forest-700; }
-  .pill-settled     { @apply pill bg-forest-500 text-cream-50; }
-  .pill-failed      { @apply pill bg-terracotta-700 text-cream-50; }
+  .pill-pending     { @apply pill bg-sand-200 text-ink-700; }
+  .pill-awaiting    { @apply pill bg-coral-100 text-coral-700; }
+  .pill-paid        { @apply pill bg-teal-100 text-teal-700; }
+  .pill-assigned    { @apply pill bg-teal-100 text-teal-700; }
+  .pill-pickedup    { @apply pill bg-teal-100 text-teal-700; }
+  .pill-delivering  { @apply pill bg-coral-100 text-coral-700; }
+  .pill-atcustomer  { @apply pill bg-coral-200 text-coral-700; }
+  .pill-delivered   { @apply pill bg-teal-200 text-teal-700; }
+  .pill-approved    { @apply pill bg-teal-500 text-sand-50; }
+  .pill-settled     { @apply pill bg-teal-600 text-sand-50; }
+  .pill-disputed    { @apply pill bg-coral-500 text-sand-50; }
+  .pill-refunded    { @apply pill bg-sand-300 text-ink-700; }
+  .pill-failed      { @apply pill bg-coral-700 text-sand-50; }
 
-  /* The pulse dot for "live" markers */
+  /* === Live "active" dot === */
   .live-dot {
-    @apply relative inline-block w-2 h-2 rounded-full bg-terracotta-500;
+    @apply relative inline-block w-2 h-2 rounded-full bg-coral-500;
   }
   .live-dot::after {
     content: "";
-    @apply absolute inset-0 rounded-full bg-terracotta-500 opacity-75;
-    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    @apply absolute inset-0 rounded-full bg-coral-500 opacity-75 animate-pulse_dot;
+  }
+
+  /* === Dashboard shell === */
+  .shell {
+    @apply min-h-screen flex flex-col lg:flex-row;
+  }
+  .sidebar {
+    @apply lg:w-64 lg:shrink-0 lg:h-screen lg:sticky lg:top-0
+           bg-sand-50 border-r border-sand-200
+           flex flex-col;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 mx-3 rounded-card
+           text-sm text-ink-700 hover:bg-sand-100
+           transition-colors;
+  }
+  .sidebar-link-active {
+    @apply bg-teal-600 text-sand-50 hover:bg-teal-700;
+  }
+  .main-content {
+    @apply flex-1 min-w-0;
+  }
+
+  /* === Inline mini-card stat === */
+  .stat-card {
+    @apply card p-4 flex flex-col gap-1;
+  }
+  .stat-label {
+    @apply text-[11px] uppercase tracking-wider text-ink-500;
+  }
+  .stat-value {
+    @apply font-display text-2xl tabular leading-tight text-ink-900;
   }
 }
 
 @layer utilities {
-  /* Numeric font feature for money columns — tabular alignment */
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
 }
 
-/* Leaflet map container styling */
+/* === Leaflet === */
 .leaflet-container {
   @apply rounded-card;
   font-family: Inter, system-ui, sans-serif;
 }
 .leaflet-popup-content-wrapper {
-  @apply bg-cream-50 text-ink-700 rounded-card shadow-lift;
+  @apply bg-sand-50 text-ink-700 rounded-card shadow-lift;
 }
-.leaflet-popup-tip {
-  background: #FBF8F3;
+.leaflet-popup-tip { background: #FBF6F0; }
+.leaflet-control-attribution {
+  @apply !text-[10px] !bg-sand-50/80;
 }

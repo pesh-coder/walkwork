@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tukole — Reliable deliveries for Kampala's online sellers",
+  title: "Tukole — Trusted deliveries for Kampala's online sellers",
   description:
-    "Tukole is the operating system for online businesses in Uganda. We track every package and every shilling — so sellers always know where their money is.",
+    "Escrow-secured logistics for online businesses in Uganda. Customers pay safely. Riders get paid. Sellers see every shilling.",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#FBF8F3",
+  themeColor: "#0E6B6B",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
