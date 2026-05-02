@@ -1,281 +1,352 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
-  ArrowRight, Shield, MapPin, Smartphone, Sparkles,
-  PackageCheck, Banknote, Eye,
+  ArrowRight, Users, BarChart3, MapPin, ShieldCheck,
+  Smartphone, Sparkles,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
-      {/* Nav */}
-      <nav className="px-5 sm:px-8 pt-6 flex items-center justify-between max-w-6xl mx-auto">
-        <Logo size="md" variant="teal" />
-        <div className="flex items-center gap-3">
-          <a href="#how" className="hidden sm:inline text-sm text-ink-700 hover:text-ink-900">
-            How it works
-          </a>
-          <a href="#pricing" className="hidden sm:inline text-sm text-ink-700 hover:text-ink-900">
-            Pricing
-          </a>
-          <Link href="/rider/signup" className="hidden md:inline text-sm text-ink-700 hover:text-ink-900">
-            Boda riders
-          </Link>
-          <Link href="/seller/signup" className="btn-primary">
-            Start selling <ArrowRight className="w-4 h-4" />
+    <main className="min-h-screen bg-sand-50">
+      {/* Top nav */}
+      <header className="border-b border-sand-200 bg-sand-50/80 backdrop-blur sticky top-0 z-30">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
+          <Logo size="md" />
+          <nav className="hidden sm:flex items-center gap-6 text-sm text-ink-700">
+            <a href="#how-it-works" className="hover:text-teal-700">How it works</a>
+            <a href="#pricing" className="hover:text-teal-700">Pricing</a>
+            <a href="#riders" className="hover:text-teal-700">Boda riders</a>
+          </nav>
+          <Link href="/seller/signup" className="btn-primary text-sm">
+            Start selling
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-      </nav>
+      </header>
 
       {/* Hero */}
-      <section className="px-5 sm:px-8 pt-12 sm:pt-20 pb-16 max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-chip bg-coral-100 text-coral-700 text-xs font-medium">
-            <Sparkles className="w-3 h-3" />
-            Trust, built into every delivery
-          </div>
-        </motion.div>
-
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mt-6 font-display text-4xl sm:text-6xl lg:text-7xl text-ink-900 leading-[1.05] tracking-tight max-w-4xl"
-        >
-          Your customer pays{" "}
-          <em className="text-teal-600 not-italic">safely</em>.<br />
-          Your boda gets paid <em className="text-coral-500 not-italic">guaranteed</em>.<br />
-          You see <em className="text-teal-600 not-italic">every shilling</em>.
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-6 text-lg text-ink-700 max-w-2xl leading-relaxed"
-        >
-          Tukole is the trust layer between Kampala's online sellers and their
-          customers. Money sits in escrow until the customer is happy. The rider
-          is paid for the trip. The seller is paid for the sale. No more
-          disappearing cash, no more failed deliveries.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-8 flex flex-wrap gap-3"
-        >
-          <Link href="/seller/signup" className="btn-primary text-base px-6 py-3">
-            Start selling — UGX 10,000 free credit <ArrowRight className="w-4 h-4" />
+      <section className="px-5 sm:px-8 pt-16 sm:pt-24 pb-20 max-w-6xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-chip bg-coral-100 text-coral-700 text-xs font-medium">
+          <Sparkles className="w-3 h-3" />
+          Built for online sellers in Kampala
+        </div>
+        <h1 className="mt-6 font-display text-5xl sm:text-7xl text-ink-900 leading-[1.04] tracking-tight max-w-4xl">
+          Run your deliveries{" "}
+          <em className="text-teal-600 not-italic">like a real business</em>.
+        </h1>
+        <p className="mt-6 text-lg sm:text-xl text-ink-700 max-w-2xl leading-relaxed">
+          Tukole is the delivery platform for online businesses. Trained riders,
+          live tracking, and a record of every customer — so you can stop
+          chasing orders and start growing your shop.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link href="/seller/signup" className="btn-primary text-base">
+            Start selling — UGX 10,000 free credit
+            <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link href="/rider/signup" className="btn-secondary text-base px-6 py-3">
+          <Link href="/rider/signup" className="btn-secondary text-base">
             I'm a boda rider
           </Link>
-        </motion.div>
+        </div>
       </section>
 
-      {/* The trust proposition (3 columns) */}
-      <section id="how" className="px-5 sm:px-8 py-16 max-w-6xl mx-auto">
-        <h2 className="font-display text-3xl sm:text-4xl text-ink-900 mb-3">
-          Trust on every side.
+      {/* What changes for a seller */}
+      <section className="px-5 sm:px-8 py-16 max-w-6xl mx-auto">
+        <h2 className="font-display text-3xl sm:text-4xl text-ink-900 max-w-2xl">
+          What changes when you join Tukole.
         </h2>
-        <p className="text-ink-700 mb-12 max-w-2xl">
-          Other delivery apps move packages. Tukole moves trust between three
-          parties — and gets each one paid the right amount, at the right time.
+        <p className="mt-3 text-ink-700 max-w-2xl">
+          Three things every online business needs — and most don't have.
         </p>
-        <div className="grid sm:grid-cols-3 gap-6">
-          <Trust
-            icon={Shield}
-            title="For the customer"
-            body="You pay into Tukole's escrow, not the seller. The boda only delivers once your money is secured. After you receive the item and check it, you release the funds — or open a dispute if something's wrong."
+
+        <div className="mt-10 grid sm:grid-cols-3 gap-4">
+          <BenefitCard
+            icon={Users}
+            title="Own your customers"
+            body="Every customer's name, phone and address sits in your dashboard. They're yours — to follow up, to retain, to grow."
           />
-          <Trust
-            icon={Banknote}
-            title="For the seller"
-            body="No more chasing customers for payment. Your earnings appear in your wallet the moment the customer approves. See every order, every shilling, and every boda live on your dashboard."
+          <BenefitCard
+            icon={MapPin}
+            title="Control your deliveries"
+            body="Vetted bodas, assigned to your business. Live map tracking. Photo proof at pickup and delivery. No more chasing."
           />
-          <Trust
-            icon={Smartphone}
-            title="For the boda rider"
-            body="Every trip is paid — even if the customer rejects the item. The funds are guaranteed before you pick up. Pickup and delivery photos protect you from disputes."
+          <BenefitCard
+            icon={BarChart3}
+            title="Grow your brand"
+            body="Customers see your shop, not ours. Every delivery becomes a touchpoint that builds your reputation, not someone else's."
           />
         </div>
       </section>
 
-      {/* The flow */}
-      <section className="px-5 sm:px-8 py-16 max-w-6xl mx-auto">
-        <h2 className="font-display text-3xl sm:text-4xl text-ink-900 mb-12">
+      {/* How it works */}
+      <section id="how-it-works" className="px-5 sm:px-8 py-20 max-w-6xl mx-auto">
+        <h2 className="font-display text-3xl sm:text-4xl text-ink-900 max-w-2xl">
           How it works.
         </h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <Step num="01" title="Seller creates the order">
-            Sarah opens her Tukole dashboard, enters her customer's name, phone
-            and the item price. Tukole sends an SMS with a tracking link.
-          </Step>
-          <Step num="02" title="Customer drops their pin & pays">
-            On the tracking page, the customer drags a pin on a satellite map
-            to their exact gate, optionally uploads a landmark photo, then pays
-            into escrow with one tap.
-          </Step>
-          <Step num="03" title="Rider delivers, customer approves">
-            The nearest available boda is dispatched. Customer reads them the
-            OTP, approves the delivery — and Tukole releases the money to the
-            seller and the rider in seconds.
-          </Step>
+        <p className="mt-3 text-ink-700 max-w-2xl">
+          Three steps from order to delivered. No phone calls. No chaos.
+        </p>
+
+        <div className="mt-10 grid sm:grid-cols-3 gap-4">
+          <Step
+            n="01"
+            title="You create the order"
+            body="Open Tukole, enter your customer's name, phone, and what they're buying. Tukole sends them a tracking link."
+          />
+          <Step
+            n="02"
+            title="Customer drops their pin"
+            body="They tap the link, drag a pin to their gate on a satellite map, and confirm. Your trained boda is dispatched."
+          />
+          <Step
+            n="03"
+            title="Delivered — recorded forever"
+            body="Boda delivers. Customer confirms. The whole transaction lives in your dashboard, ready for repeat business."
+          />
         </div>
       </section>
 
-      {/* The Tukole Bullseye */}
-      <section className="px-5 sm:px-8 py-16 max-w-6xl mx-auto">
+      {/* The address problem */}
+      <section className="px-5 sm:px-8 py-12 max-w-6xl mx-auto">
         <div className="card-teal p-8 sm:p-12">
-          <div className="text-xs uppercase tracking-wider text-teal-100 font-medium">
-            The Tukole Bullseye
-          </div>
-          <h2 className="mt-2 font-display text-3xl sm:text-5xl leading-tight">
-            We solved the address problem.
-          </h2>
-          <p className="mt-6 text-teal-100 max-w-3xl text-lg">
-            Most of Kampala doesn't have street addresses. Sellers tell their
-            riders things like <em>"behind the petrol station, near the mango
-            tree"</em> — and bodas get lost. Tukole asks the customer to drop
-            their own pin and snap a photo of their gate. The next time anyone
-            delivers to that customer, the bullseye is already saved.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Badge>Satellite-view pin drop</Badge>
-            <Badge>Plus Code (3m precision)</Badge>
-            <Badge>Landmark photo</Badge>
-            <Badge>Rider-learned map</Badge>
+          <div className="max-w-3xl">
+            <div className="text-xs uppercase tracking-wider opacity-80 mb-3">
+              The Tukole bullseye
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl leading-tight">
+              We solved the address problem.
+            </h2>
+            <p className="mt-4 text-base sm:text-lg leading-relaxed opacity-95">
+              Most of Kampala doesn't have street addresses. Sellers tell their
+              riders <em>"behind the petrol station, near the mango tree"</em> —
+              and bodas get lost. We ask the customer to drop their own pin and
+              snap a photo of their gate. Next time anyone delivers to that
+              customer, the bullseye is already saved.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2 text-xs">
+              <span className="px-3 py-1.5 rounded-chip bg-sand-50/15 backdrop-blur">
+                Satellite-view pin drop
+              </span>
+              <span className="px-3 py-1.5 rounded-chip bg-sand-50/15 backdrop-blur">
+                Plus Code precision
+              </span>
+              <span className="px-3 py-1.5 rounded-chip bg-sand-50/15 backdrop-blur">
+                Landmark photo
+              </span>
+              <span className="px-3 py-1.5 rounded-chip bg-sand-50/15 backdrop-blur">
+                Rider-learned map
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="px-5 sm:px-8 py-16 max-w-6xl mx-auto">
-        <h2 className="font-display text-3xl sm:text-4xl text-ink-900 mb-3">
-          Honest pricing.
+      <section id="pricing" className="px-5 sm:px-8 py-20 max-w-6xl mx-auto">
+        <h2 className="font-display text-3xl sm:text-4xl text-ink-900 max-w-2xl">
+          Pricing that helps you keep more of what you earn.
         </h2>
-        <p className="text-ink-700 mb-12 max-w-2xl">
-          We make money when sellers make sales. No commitment, no monthly fee.
+        <p className="mt-3 text-ink-700 max-w-2xl">
+          Pick the plan that matches how you sell. Cancel anytime.
         </p>
-        <div className="grid sm:grid-cols-3 gap-4">
-          <PricingCard
-            label="Customer pays"
-            value="Item + UGX 5,000"
-            sub="Total stays in escrow"
-            tone="default"
-          />
-          <PricingCard
-            label="Seller keeps"
-            value="95%"
-            sub="of the item value"
-            tone="primary"
-          />
-          <PricingCard
-            label="Rider gets"
-            value="UGX 5,000"
-            sub="per completed trip"
-            tone="coral"
-          />
+
+        <div className="mt-10 grid sm:grid-cols-2 gap-4">
+          {/* Basic */}
+          <div className="card p-6 sm:p-8">
+            <div className="text-xs uppercase tracking-wider text-teal-700 font-semibold">
+              Basic
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="font-display text-4xl text-ink-900">UGX 20,000</span>
+              <span className="text-sm text-ink-500">/ month</span>
+            </div>
+            <p className="text-sm text-ink-500 mt-1">
+              Plus UGX 350 per delivery and 2% on item value
+            </p>
+            <ul className="mt-6 space-y-2.5 text-sm text-ink-700">
+              <Feature>Trained bodas assigned to your shop</Feature>
+              <Feature>Live order tracking for you and your customer</Feature>
+              <Feature>Customer + delivery history saved</Feature>
+              <Feature>Branded tracking page</Feature>
+              <Feature>Photo proof of every delivery</Feature>
+            </ul>
+            <Link href="/seller/signup" className="btn-secondary w-full justify-center mt-6">
+              Start with Basic
+            </Link>
+          </div>
+
+          {/* Premium */}
+          <div className="card-coral p-6 sm:p-8 relative">
+            <span className="absolute top-4 right-4 px-2.5 py-1 rounded-chip bg-sand-50/25 text-xs font-semibold backdrop-blur">
+              Recommended
+            </span>
+            <div className="text-xs uppercase tracking-wider opacity-90 font-semibold">
+              Premium
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="font-display text-4xl">UGX 50,000</span>
+              <span className="text-sm opacity-90">/ month</span>
+            </div>
+            <p className="text-sm opacity-90 mt-1">
+              Plus UGX 350 per delivery and 2% on item value
+            </p>
+            <ul className="mt-6 space-y-2.5 text-sm">
+              <Feature accent>Everything in Basic</Feature>
+              <Feature accent>Dedicated team of bodas for your shop</Feature>
+              <Feature accent>Public verified shop profile</Feature>
+              <Feature accent>Customer attribution analytics</Feature>
+              <Feature accent>Priority support, faster dispute resolution</Feature>
+            </ul>
+            <Link href="/seller/signup" className="btn w-full justify-center mt-6 bg-sand-50 text-coral-600 hover:bg-sand-100">
+              Start with Premium
+            </Link>
+          </div>
         </div>
-        <p className="mt-6 text-sm text-ink-500">
-          Tukole keeps a 5% commission on the item value plus a fixed UGX 1,500
-          platform fee. That's how we keep the lights on.
+
+        <p className="mt-6 text-sm text-ink-500 max-w-2xl">
+          Riders are paid the full delivery fee, auto-calculated by distance.
+          We make money when sellers make sales. That keeps everyone honest.
         </p>
       </section>
 
-      <footer className="px-5 sm:px-8 py-12 border-t border-sand-200 max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Logo size="sm" variant="teal" />
-            <span className="text-xs text-ink-500">Built in Kampala for Kampala.</span>
+      {/* Boda riders */}
+      <section id="riders" className="px-5 sm:px-8 py-20 max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 gap-8 items-center">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-coral-600 font-semibold">
+              For boda riders
+            </div>
+            <h2 className="mt-3 font-display text-3xl sm:text-4xl text-ink-900 leading-tight">
+              Steady work. Fair pay. Every trip guaranteed.
+            </h2>
+            <p className="mt-4 text-ink-700 leading-relaxed">
+              Tukole partners with vetted boda riders to handle deliveries for
+              real businesses. Every trip is paid even if the customer rejects
+              the item. We auto-calculate your fee by distance — no haggling.
+            </p>
+            <Link href="/rider/signup" className="btn-coral mt-6 inline-flex">
+              Join as a rider
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <div className="text-xs text-ink-500">Future Makers Hackathon 2026</div>
+
+          <div className="card p-6 space-y-4">
+            <RiderPoint icon={ShieldCheck} title="Trip is paid before you arrive">
+              Funds are guaranteed before you pick up the package. You're never the one carrying the loss.
+            </RiderPoint>
+            <RiderPoint icon={Smartphone} title="One simple app">
+              Battery level, jobs, earnings — all in one place. No paperwork.
+            </RiderPoint>
+            <RiderPoint icon={MapPin} title="Customers know where to meet you">
+              They drop a pin on the map. You ride to the bullseye. No "behind the mango tree."
+            </RiderPoint>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="px-5 sm:px-8 pb-24 max-w-6xl mx-auto">
+        <div className="card-teal p-10 sm:p-14 text-center">
+          <h2 className="font-display text-3xl sm:text-4xl leading-tight">
+            Ready to take control of your deliveries?
+          </h2>
+          <p className="mt-3 max-w-2xl mx-auto opacity-95">
+            Sign up in two minutes. UGX 10,000 free credit on your first day.
+          </p>
+          <Link href="/seller/signup" className="btn-coral mt-6 inline-flex text-base px-6">
+            Start selling on Tukole
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-sand-200 px-5 sm:px-8 py-8 max-w-6xl mx-auto">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
+          <div className="flex items-center gap-3">
+            <Logo size="sm" />
+            <span>Built in Kampala for Kampala.</span>
+          </div>
+          <div className="flex items-center gap-5">
+            <Link href="/explore" className="hover:text-teal-700">
+              Explore sellers
+            </Link>
+            <Link href="/seller/signup" className="hover:text-teal-700">
+              Start selling
+            </Link>
+            <Link href="/rider/signup" className="hover:text-teal-700">
+              Become a rider
+            </Link>
+          </div>
         </div>
       </footer>
     </main>
   );
 }
 
-function Trust({
+function BenefitCard({
   icon: Icon,
   title,
   body,
 }: {
-  icon: typeof Shield;
+  icon: typeof Users;
   title: string;
   body: string;
 }) {
   return (
-    <div className="card p-6">
-      <div className="w-10 h-10 rounded-card bg-teal-100 text-teal-700 flex items-center justify-center mb-4">
+    <div className="card p-6 sm:p-7">
+      <div className="w-10 h-10 rounded-card bg-teal-100 text-teal-700 flex items-center justify-center">
         <Icon className="w-5 h-5" />
       </div>
-      <h3 className="font-display text-xl text-ink-900">{title}</h3>
+      <h3 className="mt-4 font-display text-xl text-ink-900">{title}</h3>
       <p className="mt-2 text-sm text-ink-700 leading-relaxed">{body}</p>
     </div>
   );
 }
 
-function Step({
-  num,
-  title,
-  children,
-}: {
-  num: string;
-  title: string;
-  children: React.ReactNode;
-}) {
+function Step({ n, title, body }: { n: string; title: string; body: string }) {
   return (
-    <div className="card p-6">
-      <div className="font-mono text-xs text-coral-600 mb-2">{num}</div>
-      <h3 className="font-display text-xl text-ink-900 leading-tight">{title}</h3>
-      <p className="mt-2 text-sm text-ink-700 leading-relaxed">{children}</p>
+    <div className="card p-6 sm:p-7">
+      <div className="text-xs font-mono text-coral-600 font-semibold">{n}</div>
+      <h3 className="mt-3 font-display text-xl text-ink-900">{title}</h3>
+      <p className="mt-2 text-sm text-ink-700 leading-relaxed">{body}</p>
     </div>
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Feature({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-chip bg-teal-600 border border-teal-500 text-teal-100 text-xs">
-      {children}
-    </span>
+    <li className="flex items-start gap-2.5">
+      <span
+        className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${
+          accent ? "bg-sand-50" : "bg-teal-600"
+        }`}
+      />
+      <span>{children}</span>
+    </li>
   );
 }
 
-function PricingCard({
-  label,
-  value,
-  sub,
-  tone,
+function RiderPoint({
+  icon: Icon,
+  title,
+  children,
 }: {
-  label: string;
-  value: string;
-  sub: string;
-  tone: "default" | "primary" | "coral";
+  icon: typeof ShieldCheck;
+  title: string;
+  children: React.ReactNode;
 }) {
-  const toneClass =
-    tone === "primary"
-      ? "card-teal"
-      : tone === "coral"
-      ? "card-coral"
-      : "card";
-
   return (
-    <div className={`${toneClass} p-6`}>
-      <div className="text-xs uppercase tracking-wider opacity-80">{label}</div>
-      <div className="mt-2 font-display text-3xl tabular leading-tight">
-        {value}
+    <div className="flex items-start gap-3">
+      <div className="w-9 h-9 rounded-card bg-coral-100 text-coral-600 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4" />
       </div>
-      <div className="text-sm opacity-80 mt-1">{sub}</div>
+      <div>
+        <div className="font-display text-base text-ink-900">{title}</div>
+        <div className="text-sm text-ink-700 mt-0.5 leading-relaxed">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
