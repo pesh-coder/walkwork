@@ -161,7 +161,7 @@ export default function HomePage() {
               <span className="text-sm text-ink-500">/ month</span>
             </div>
             <p className="text-sm text-ink-500 mt-1">
-              Plus UGX 350 per delivery and 2% on item value
+              Plus 2% on item value
             </p>
             <ul className="mt-6 space-y-2.5 text-sm text-ink-700">
               <Feature>Trained bodas assigned to your shop</Feature>
@@ -188,7 +188,7 @@ export default function HomePage() {
               <span className="text-sm opacity-90">/ month</span>
             </div>
             <p className="text-sm opacity-90 mt-1">
-              Plus UGX 350 per delivery and 2% on item value
+              Plus 2% on item value
             </p>
             <ul className="mt-6 space-y-2.5 text-sm">
               <Feature accent>Everything in Basic</Feature>
@@ -204,7 +204,6 @@ export default function HomePage() {
         </div>
 
         <p className="mt-6 text-sm text-ink-500 max-w-2xl">
-          Riders are paid the full delivery fee, auto-calculated by distance.
           We make money when sellers make sales. That keeps everyone honest.
         </p>
       </section>
@@ -217,7 +216,7 @@ export default function HomePage() {
               For boda riders
             </div>
             <h2 className="mt-3 font-display text-3xl sm:text-4xl text-ink-900 leading-tight">
-              Steady work. Fair pay. Every trip guaranteed.
+              Steady work. Fair pay. Every trip guaranteed plus 350/= off every trip.
             </h2>
             <p className="mt-4 text-ink-700 leading-relaxed">
               Tukole partners with vetted boda riders to handle deliveries for
