@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Plus, Package, Map as MapIcon,
-  Wallet, Settings, LogOut,
+  Wallet, Settings, LogOut, Sparkles,
 } from "lucide-react";
 import { Sidebar, type SidebarItem } from "@/components/Sidebar";
 import { sellersApi, type Seller } from "@/lib/api";
@@ -52,6 +52,7 @@ export default function SellerLayout({
     { label: "Orders", href: `/seller/${id}/orders`, icon: Package },
     { label: "Live map", href: `/seller/${id}/map`, icon: MapIcon },
     { label: "Wallet", href: `/seller/${id}/wallet`, icon: Wallet },
+    { label: "Public profile", href: `/seller/${id}/profile`, icon: Sparkles },
     { label: "Settings", href: `/seller/${id}/settings`, icon: Settings },
   ];
 

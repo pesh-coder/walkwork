@@ -96,11 +96,35 @@ export default function CustomerTrackingPage({
 
   return (
     <main className="min-h-screen pb-12 bg-sand-50">
-      {/* Header */}
-      <header className="px-5 sm:px-8 py-4 bg-teal-700 text-sand-50">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <Logo size="sm" variant="light" />
-          <div className="text-xs opacity-80 font-mono">{order.short_code}</div>
+      {/* Seller-branded header */}
+      <header
+        className="text-sand-50"
+        style={{ backgroundColor: order.seller_profile_color || "#0E6B6B" }}
+      >
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 py-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider opacity-80">
+              <ShieldCheck className="w-3 h-3" />
+              Verified by Tukole
+            </span>
+            <div className="text-xs opacity-80 font-mono">{order.short_code}</div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-card bg-sand-50 flex items-center justify-center font-display text-lg font-semibold shrink-0"
+              style={{ color: order.seller_profile_color || "#0E6B6B" }}
+            >
+              {order.seller_initials || "T"}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-wider opacity-75">
+                You're ordering from
+              </div>
+              <div className="font-display text-xl truncate">
+                {order.seller_business_name || "Tukole seller"}
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -114,7 +138,7 @@ export default function CustomerTrackingPage({
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <div className="text-xs uppercase tracking-wider text-ink-500">
-                {order.seller_business_name || "Your order"}
+                Your order
               </div>
               <h1 className="font-display text-2xl text-ink-900 leading-tight mt-0.5">
                 {order.item_description}
@@ -182,6 +206,28 @@ export default function CustomerTrackingPage({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Link to seller's public profile (deepens the brand connection) */}
+        {order.seller_slug && (
+          <div className="text-center text-xs text-ink-500 mt-2">
+            Want to see more from{" "}
+            <a
+              href={`/s/${order.seller_slug}`}
+              className="font-medium underline"
+              style={{ color: order.seller_profile_color || "#0E6B6B" }}
+            >
+              {order.seller_business_name}
+            </a>
+            ? Visit their verified profile.
+          </div>
+        )}
+
+        {/* Powered by Tukole footer */}
+        <div className="text-center text-[10px] text-ink-500 uppercase tracking-wider mt-3">
+          Powered by{" "}
+          <span className="font-display normal-case text-teal-700">tukole</span>
+          {" "}— escrow + delivery for African social commerce
         </div>
       </div>
     </main>

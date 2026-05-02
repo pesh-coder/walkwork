@@ -46,6 +46,10 @@ class SellerOut(BaseModel):
     pickup_lat: Optional[float] = None
     pickup_lng: Optional[float] = None
     pickup_notes: Optional[str] = None
+    slug: Optional[str] = None
+    bio: Optional[str] = None
+    whatsapp_number: Optional[str] = None
+    profile_color: Optional[str] = None
     wallet_balance_ugx: int
     created_at: datetime
 
@@ -57,6 +61,31 @@ class SellerUpdate(BaseModel):
     pickup_lat: Optional[float] = None
     pickup_lng: Optional[float] = None
     pickup_notes: Optional[str] = None
+    slug: Optional[str] = None
+    bio: Optional[str] = None
+    whatsapp_number: Optional[str] = None
+
+
+class SellerPublicProfile(BaseModel):
+    """The buyer-facing public profile served at /s/{slug}."""
+    slug: str
+    business_name: str
+    bio: Optional[str] = None
+    location_area: Optional[str] = None
+    whatsapp_number: str
+    profile_color: str
+    initials: str
+
+    # Showcase numbers — pitched as "verified delivery metrics"
+    verified_deliveries: int
+    on_time_rate_pct: int
+    rating_out_of_5: float
+    rating_count: int
+    return_rate_pct: float
+    days_active: int
+
+    # Recent testimonials (anonymized first name + initial)
+    testimonials: list[dict]
 
 
 # -----------------------------------------------------------------------------
@@ -87,6 +116,8 @@ class RiderOut(BaseModel):
     current_lat: Optional[float] = None
     current_lng: Optional[float] = None
     last_location_at: Optional[datetime] = None
+    battery_level: str = "full"
+    battery_updated_at: Optional[datetime] = None
     wallet_balance_ugx: int
 
 
@@ -178,6 +209,9 @@ class OrderTrackOut(BaseModel):
     escrow_status: EscrowStatus
 
     seller_business_name: Optional[str] = None
+    seller_slug: Optional[str] = None
+    seller_initials: Optional[str] = None
+    seller_profile_color: Optional[str] = None
 
     rider_name: Optional[str] = None
     rider_phone: Optional[str] = None
@@ -324,3 +358,34 @@ class FleetMemberDetail(BaseModel):
     """Combined view: assignment + rider details for fleet management UIs."""
     assignment: FleetAssignmentOut
     rider: RiderOut
+
+
+# -----------------------------------------------------------------------------
+# Pricing
+# -----------------------------------------------------------------------------
+class DeliveryQuoteRequest(BaseModel):
+    seller_id: str
+    drop_lat: float
+    drop_lng: float
+    parcel_size: str = "regular"  # 'regular' | 'large' | 'fragile'
+    is_raining: bool = False
+
+
+class DeliveryQuoteOut(BaseModel):
+    distance_km: float
+    estimated_minutes: int
+    base_fare_ugx: int
+    distance_charge_ugx: int
+    time_charge_ugx: int
+    parcel_supplement_ugx: int
+    surge_multiplier: float
+    surge_reason: Optional[str] = None
+    subtotal_ugx: int
+    total_ugx: int
+
+
+# -----------------------------------------------------------------------------
+# Battery
+# -----------------------------------------------------------------------------
+class BatteryUpdate(BaseModel):
+    level: str  # 'full' | 'most' | 'half' | 'low'

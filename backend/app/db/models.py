@@ -139,11 +139,23 @@ class Seller(Base):
     email = Column(String, nullable=True)
     location_area = Column(String, nullable=True)
 
+    # Public profile (the /s/{slug} page)
+    slug = Column(String, nullable=True, unique=True, index=True)
+    bio = Column(Text, nullable=True)
+    whatsapp_number = Column(String, nullable=True)  # if different from main phone
+    profile_color = Column(String, nullable=True)    # hex tint for avatar (auto-set)
+
     # Pickup default location — set once when the seller signs up.
     # Used as the default origin for new orders.
     pickup_lat = Column(Float, nullable=True)
     pickup_lng = Column(Float, nullable=True)
     pickup_notes = Column(Text, nullable=True)
+
+    # Public profile (the buyer-facing trust page)
+    slug = Column(String, nullable=True, unique=True, index=True)
+    bio = Column(Text, nullable=True)
+    whatsapp_number = Column(String, nullable=True)  # if different from primary phone
+    profile_color = Column(String, nullable=True)    # tailwind color name; auto-pick if null
 
     # Wallet of money the seller has earned and can withdraw
     wallet_balance_ugx = Column(Integer, default=0, nullable=False)
@@ -176,6 +188,10 @@ class Rider(Base):
     current_lat = Column(Float, nullable=True)
     current_lng = Column(Float, nullable=True)
     last_location_at = Column(DateTime, nullable=True)
+
+    # Battery (electric bodas) — riders self-report; "full" / "most" / "half" / "low"
+    battery_level = Column(String, default="full", nullable=False)
+    battery_updated_at = Column(DateTime, nullable=True)
 
     # Earnings wallet (gets paid per completed delivery)
     wallet_balance_ugx = Column(Integer, default=0, nullable=False)

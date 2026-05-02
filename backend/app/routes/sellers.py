@@ -37,6 +37,39 @@ def _normalize_phone(phone: str) -> str:
     return p
 
 
+def _slugify(text: str) -> str:
+    """Kebab-case a string for use as a URL slug."""
+    s = re.sub(r"[^\w\s-]", "", text.lower())
+    s = re.sub(r"[\s_]+", "-", s).strip("-")
+    return s or "shop"
+
+
+def _ensure_unique_slug(db: Session, base: str, exclude_id: str | None = None) -> str:
+    """Return `base`, or base-2, base-3, ... until unique."""
+    slug = base
+    n = 2
+    while True:
+        q = db.query(Seller).filter(Seller.slug == slug)
+        if exclude_id:
+            q = q.filter(Seller.id != exclude_id)
+        if not q.first():
+            return slug
+        slug = f"{base}-{n}"
+        n += 1
+
+
+# Brand palette for auto-assigned avatar colors
+_AVATAR_COLORS = [
+    "#0E6B6B", "#0C5757", "#3E9595", "#EF6018",
+    "#C84B0A", "#FF7B3A", "#0A4444", "#6BB3B3",
+]
+
+
+def _pick_color(business_name: str) -> str:
+    h = sum(ord(c) for c in business_name) if business_name else 0
+    return _AVATAR_COLORS[h % len(_AVATAR_COLORS)]
+
+
 @router.get("", response_model=list[SellerOut])
 def list_all_sellers(db: Session = Depends(get_db)):
     """List all sellers — used by Tukole admin for fleet management."""
@@ -53,6 +86,9 @@ def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
             detail=f"This phone is already registered as {existing.business_name}.",
         )
 
+    base_slug = _slugify(payload.business_name)
+    slug = _ensure_unique_slug(db, base_slug)
+
     seller = Seller(
         business_name=payload.business_name.strip(),
         owner_name=payload.owner_name.strip(),
@@ -62,6 +98,9 @@ def create_seller(payload: SellerCreate, db: Session = Depends(get_db)):
         pickup_lat=payload.pickup_lat,
         pickup_lng=payload.pickup_lng,
         pickup_notes=payload.pickup_notes,
+        slug=slug,
+        whatsapp_number=phone,
+        profile_color=_pick_color(payload.business_name),
         wallet_balance_ugx=0,
     )
     db.add(seller)
@@ -117,6 +156,16 @@ def update_seller(seller_id: str, payload: SellerUpdate, db: Session = Depends(g
     if not s:
         raise HTTPException(status_code=404, detail="Seller not found")
     data = payload.model_dump(exclude_unset=True)
+
+    # If slug is being changed, validate format and uniqueness
+    if "slug" in data and data["slug"]:
+        new_slug = _slugify(data["slug"])
+        if new_slug != s.slug:
+            data["slug"] = _ensure_unique_slug(db, new_slug, exclude_id=s.id)
+
+    if "whatsapp_number" in data and data["whatsapp_number"]:
+        data["whatsapp_number"] = _normalize_phone(data["whatsapp_number"])
+
     for k, v in data.items():
         setattr(s, k, v)
     db.commit()

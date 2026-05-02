@@ -13,7 +13,7 @@ from sqlalchemy import inspect, text
 from app.config import settings
 from app.db.database import Base, SessionLocal, engine
 from app.db.models import Rider
-from app.routes import admin, fleet, orders, riders, sellers, whatsapp
+from app.routes import admin, fleet, orders, public, riders, sellers, whatsapp
 
 logger = logging.getLogger("tukole.startup")
 logger.setLevel(logging.INFO)
@@ -35,11 +35,21 @@ def _initialize_schema():
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
 
-    # Sentinels: customers (v2 escrow) and seller_riders (v2.1 vetted fleet)
-    schema_outdated = existing_tables and (
-        "customers" not in existing_tables
-        or "seller_riders" not in existing_tables
-    )
+    # Check sentinels for each schema version we know about
+    schema_outdated = False
+    if existing_tables:
+        if "customers" not in existing_tables or "seller_riders" not in existing_tables:
+            schema_outdated = True
+        else:
+            # v2.2: sellers.slug column should exist
+            seller_cols = {c["name"] for c in inspector.get_columns("sellers")}
+            if "slug" not in seller_cols:
+                schema_outdated = True
+            else:
+                # v2.3: riders.battery_level column should exist
+                rider_cols = {c["name"] for c in inspector.get_columns("riders")}
+                if "battery_level" not in rider_cols:
+                    schema_outdated = True
 
     if schema_outdated:
         if settings.reset_db_on_schema_mismatch:
@@ -141,5 +151,6 @@ app.include_router(sellers.router)
 app.include_router(riders.router)
 app.include_router(fleet.router)
 app.include_router(orders.router)
+app.include_router(public.router)
 app.include_router(whatsapp.router)
 app.include_router(admin.router)

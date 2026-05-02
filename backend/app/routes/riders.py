@@ -13,6 +13,7 @@ from app.config import settings
 from app.db.database import get_db
 from app.db.models import LedgerEntry, LedgerEntryType, Order, OrderStatus, Rider
 from app.db.schemas import (
+    BatteryUpdate,
     LedgerEntryOut,
     OrderOut,
     RiderCreate,
@@ -103,6 +104,31 @@ def update_location(
     r.current_lat = payload.lat
     r.current_lng = payload.lng
     r.last_location_at = datetime.utcnow()
+    db.commit()
+    db.refresh(r)
+    return r
+
+
+@router.post("/{rider_id}/battery", response_model=RiderOut)
+def update_battery(
+    rider_id: str, payload: BatteryUpdate, db: Session = Depends(get_db)
+):
+    """
+    Rider self-reports their battery level. Valid: full / most / half / low.
+    Used by assignment to skip low-battery riders for long jobs.
+    """
+    r = db.query(Rider).filter(Rider.id == rider_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Rider not found")
+
+    level = (payload.level or "").strip().lower()
+    if level not in ("full", "most", "half", "low"):
+        raise HTTPException(
+            status_code=400,
+            detail="Battery level must be one of: full, most, half, low",
+        )
+    r.battery_level = level
+    r.battery_updated_at = datetime.utcnow()
     db.commit()
     db.refresh(r)
     return r

@@ -58,8 +58,33 @@ export interface Seller {
   pickup_lat?: number | null;
   pickup_lng?: number | null;
   pickup_notes?: string | null;
+  slug?: string | null;
+  bio?: string | null;
+  whatsapp_number?: string | null;
+  profile_color?: string | null;
   wallet_balance_ugx: number;
   created_at: string;
+}
+
+export interface PublicProfile {
+  slug: string;
+  business_name: string;
+  bio?: string | null;
+  location_area?: string | null;
+  whatsapp_number: string;
+  profile_color: string;
+  initials: string;
+  verified_deliveries: number;
+  on_time_rate_pct: number;
+  rating_out_of_5: number;
+  rating_count: number;
+  return_rate_pct: number;
+  days_active: number;
+  testimonials: Array<{
+    author: string;
+    body: string;
+    rating: number;
+  }>;
 }
 
 export interface Rider {
@@ -75,7 +100,22 @@ export interface Rider {
   current_lat?: number | null;
   current_lng?: number | null;
   last_location_at?: string | null;
+  battery_level?: "full" | "most" | "half" | "low";
+  battery_updated_at?: string | null;
   wallet_balance_ugx: number;
+}
+
+export interface DeliveryQuote {
+  distance_km: number;
+  estimated_minutes: number;
+  base_fare_ugx: number;
+  distance_charge_ugx: number;
+  time_charge_ugx: number;
+  parcel_supplement_ugx: number;
+  surge_multiplier: number;
+  surge_reason?: string | null;
+  subtotal_ugx: number;
+  total_ugx: number;
 }
 
 export interface Order {
@@ -126,6 +166,9 @@ export interface OrderTrack {
   status: OrderStatus;
   escrow_status: EscrowStatus;
   seller_business_name?: string | null;
+  seller_slug?: string | null;
+  seller_initials?: string | null;
+  seller_profile_color?: string | null;
 
   rider_name?: string | null;
   rider_phone?: string | null;
@@ -292,7 +335,31 @@ export const ridersApi = {
       body: JSON.stringify({ lat, lng }),
     }),
 
+  updateBattery: (id: string, level: "full" | "most" | "half" | "low") =>
+    request<Rider>(`/riders/${id}/battery`, {
+      method: "POST",
+      body: JSON.stringify({ level }),
+    }),
+
   listAll: () => request<Rider[]>("/riders"),
+};
+
+export const pricingApi = {
+  quote: (data: {
+    seller_id: string;
+    drop_lat: number;
+    drop_lng: number;
+    parcel_size?: "regular" | "large" | "fragile";
+    is_raining?: boolean;
+  }) =>
+    request<DeliveryQuote>("/pricing/quote", {
+      method: "POST",
+      body: JSON.stringify({
+        parcel_size: "regular",
+        is_raining: false,
+        ...data,
+      }),
+    }),
 };
 
 // -----------------------------------------------------------------------------
@@ -365,6 +432,10 @@ export const trackingApi = {
       method: "POST",
       body: JSON.stringify({ reason, customer_message: message }),
     }),
+};
+
+export const publicApi = {
+  getProfile: (slug: string) => request<PublicProfile>(`/s/${slug}`),
 };
 
 export const fleetApi = {

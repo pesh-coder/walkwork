@@ -70,47 +70,6 @@ export default async function PublicSellerProfile({
 
   return (
     <main className="min-h-screen bg-sand-50">
-      {/* Schema.org structured data — what Google reads to show rich results */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "LocalBusiness",
-            name: profile.business_name,
-            description: profile.bio || `${profile.business_name} — verified by Tukole. ${profile.verified_deliveries} deliveries with escrow protection.`,
-            address: {
-              "@type": "PostalAddress",
-              addressLocality: profile.location_area || "Kampala",
-              addressRegion: "Central Region",
-              addressCountry: "UG",
-            },
-            telephone: profile.whatsapp_number,
-            aggregateRating: {
-              "@type": "AggregateRating",
-              ratingValue: profile.rating_out_of_5,
-              reviewCount: profile.rating_count,
-              bestRating: 5,
-              worstRating: 1,
-            },
-            review: profile.testimonials.slice(0, 3).map((t) => ({
-              "@type": "Review",
-              author: { "@type": "Person", name: t.author },
-              reviewRating: {
-                "@type": "Rating",
-                ratingValue: t.rating,
-                bestRating: 5,
-              },
-              reviewBody: t.body,
-            })),
-            potentialAction: {
-              "@type": "OrderAction",
-              target: `https://wa.me/${profile.whatsapp_number.replace(/[^\d]/g, "")}`,
-            },
-          }),
-        }}
-      />
-
       {/* Top bar */}
       <header className="bg-teal-700 text-sand-50">
         <div className="max-w-2xl mx-auto px-5 py-3 flex items-center justify-between">

@@ -1,20 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, AlertCircle, Sparkles, Info } from "lucide-react";
-import { sellersApi } from "@/lib/api";
+import {
+  ArrowRight, Loader2, AlertCircle, Sparkles, Info,
+  CloudRain, Package, Calculator, MapPin,
+} from "lucide-react";
+import { sellersApi, pricingApi, type DeliveryQuote } from "@/lib/api";
 import { ugx } from "@/lib/format";
 
-const KAMPALA_AREAS = [
-  "Bukoto", "Ntinda", "Kololo", "Kamwokya", "Nakawa", "Kabalagala",
-  "Bugolobi", "Muyenga", "Naguru", "Mbuya", "Najjera", "Kira",
-  "Mengo", "Rubaga", "Kawempe", "Makindye", "Wandegeya", "Nakulabye",
-  "Kansanga", "Katwe", "Other",
-];
+// Approximate centroids for Kampala neighbourhoods — used to *estimate*
+// distance for the delivery quote shown to the seller. Final settlement uses
+// the real customer pin captured on the tracking page.
+const AREA_CENTROIDS: Record<string, [number, number]> = {
+  Bukoto:    [0.3500, 32.5950],
+  Ntinda:    [0.3580, 32.6100],
+  Kololo:    [0.3346, 32.5916],
+  Kamwokya:  [0.3404, 32.5829],
+  Nakawa:    [0.3322, 32.6266],
+  Kabalagala:[0.2958, 32.6046],
+  Bugolobi:  [0.3115, 32.6147],
+  Muyenga:   [0.2962, 32.6157],
+  Naguru:    [0.3357, 32.6144],
+  Mbuya:     [0.3220, 32.6280],
+  Najjera:   [0.3680, 32.6420],
+  Kira:      [0.3860, 32.6570],
+  Mengo:     [0.2954, 32.5546],
+  Rubaga:    [0.3081, 32.5511],
+  Kawempe:   [0.3782, 32.5635],
+  Makindye:  [0.2786, 32.5848],
+  Wandegeya: [0.3375, 32.5712],
+  Nakulabye: [0.3239, 32.5588],
+  Kansanga:  [0.2882, 32.6066],
+  Katwe:     [0.2956, 32.5773],
+};
+const KAMPALA_AREAS = Object.keys(AREA_CENTROIDS).concat(["Other"]);
 
-const DEFAULT_DELIVERY_FEE = 5000;
+const FALLBACK_DELIVERY_FEE = 7500;
 
 export default function NewOrderPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -28,13 +51,58 @@ export default function NewOrderPage({ params }: { params: { id: string } }) {
   const [addressNotes, setAddressNotes] = useState("");
   const [itemDescription, setItemDescription] = useState("");
   const [itemValue, setItemValue] = useState("");
-  const [deliveryFee, setDeliveryFee] = useState(`${DEFAULT_DELIVERY_FEE}`);
+  const [deliveryFee, setDeliveryFee] = useState(`${FALLBACK_DELIVERY_FEE}`);
+
+  // Pricing controls
+  const [parcelSize, setParcelSize] = useState<"regular" | "large" | "fragile">("regular");
+  const [isRaining, setIsRaining] = useState(false);
+  const [quote, setQuote] = useState<DeliveryQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
   const itemValueNum = parseInt(itemValue.replace(/[^\d]/g, "") || "0");
   const deliveryFeeNum = parseInt(deliveryFee.replace(/[^\d]/g, "") || "0");
   const totalCharge = itemValueNum + deliveryFeeNum;
   const commission = Math.floor((itemValueNum * 500) / 10000); // 5%
   const sellerKeeps = itemValueNum - commission;
+
+  // Auto-quote when area or parcel/rain changes
+  useEffect(() => {
+    const centroid = AREA_CENTROIDS[customerArea];
+    if (!centroid) {
+      setQuote(null);
+      return;
+    }
+    let cancelled = false;
+    setQuoting(true);
+    setQuoteError(null);
+    pricingApi
+      .quote({
+        seller_id: id,
+        drop_lat: centroid[0],
+        drop_lng: centroid[1],
+        parcel_size: parcelSize,
+        is_raining: isRaining,
+      })
+      .then((q) => {
+        if (cancelled) return;
+        setQuote(q);
+        // If user hasn't manually overridden, fill in
+        setDeliveryFee(`${q.total_ugx}`);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setQuoteError(e.message);
+        setQuote(null);
+      })
+      .finally(() => {
+        if (!cancelled) setQuoting(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerArea, parcelSize, isRaining, id]);
 
   async function submit() {
     setError(null);
@@ -74,113 +142,204 @@ export default function NewOrderPage({ params }: { params: { id: string } }) {
         </h1>
         <p className="mt-2 text-sm text-ink-700">
           Fill this in once. We'll text your customer with a tracking + payment
-          link, hold the money in escrow, and find them a boda.
+          link, hold the money in escrow, and find them a vetted boda.
         </p>
       </header>
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card p-6 sm:p-8"
+        className="space-y-6"
       >
-        <h2 className="font-display text-lg text-ink-900 mb-4">Customer</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Customer name">
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Cotrida Akello"
-              className="input"
-              disabled={busy}
-            />
-          </Field>
-          <Field label="Phone (WhatsApp)">
-            <input
-              type="tel"
-              inputMode="tel"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="0772 123 456"
-              className="input"
-              disabled={busy}
-            />
-          </Field>
-          <Field label="Area">
-            <select
-              value={customerArea}
-              onChange={(e) => setCustomerArea(e.target.value)}
-              className="input"
-              disabled={busy}
-            >
-              <option value="">Pick an area…</option>
-              {KAMPALA_AREAS.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field
-            label="Notes for the rider (optional)"
-            hint="The customer will also drop a pin themselves."
-          >
-            <input
-              type="text"
-              value={addressNotes}
-              onChange={(e) => setAddressNotes(e.target.value)}
-              placeholder="Yellow gate next to MTN kiosk"
-              className="input"
-              disabled={busy}
-            />
-          </Field>
-        </div>
+        {/* Customer */}
+        <section>
+          <h2 className="font-display text-lg text-ink-900 mb-3">Customer</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Customer name">
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Cotrida Akello"
+                className="input"
+                disabled={busy}
+              />
+            </Field>
+            <Field label="Customer phone">
+              <input
+                type="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="0750 366 664"
+                className="input"
+                disabled={busy}
+              />
+            </Field>
+            <Field label="Area" hint="Where in Kampala the customer is.">
+              <select
+                value={customerArea}
+                onChange={(e) => setCustomerArea(e.target.value)}
+                className="input"
+                disabled={busy}
+              >
+                <option value="">Select an area</option>
+                {KAMPALA_AREAS.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Address notes (optional)" hint="Landmark, gate colour, etc.">
+              <input
+                type="text"
+                value={addressNotes}
+                onChange={(e) => setAddressNotes(e.target.value)}
+                placeholder="Big white gate, opposite the bakery"
+                className="input"
+                disabled={busy}
+              />
+            </Field>
+          </div>
+        </section>
 
-        <h2 className="font-display text-lg text-ink-900 mt-8 mb-4">Item</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Description" className="sm:col-span-2">
-            <input
-              type="text"
-              value={itemDescription}
-              onChange={(e) => setItemDescription(e.target.value)}
-              placeholder="Black leather shoes, size 41"
-              className="input"
-              disabled={busy}
-            />
-          </Field>
-          <Field label="Item price (UGX)">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={itemValue}
-              onChange={(e) => setItemValue(e.target.value.replace(/[^\d,]/g, ""))}
-              placeholder="60,000"
-              className="input"
-              disabled={busy}
-            />
-          </Field>
+        {/* Item */}
+        <section>
+          <h2 className="font-display text-lg text-ink-900 mb-3">What they're buying</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Description" className="sm:col-span-2">
+              <input
+                type="text"
+                value={itemDescription}
+                onChange={(e) => setItemDescription(e.target.value)}
+                placeholder="Black leather shoes, size 41"
+                className="input"
+                disabled={busy}
+              />
+            </Field>
+            <Field label="Item price (UGX)">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={itemValue}
+                onChange={(e) => setItemValue(e.target.value.replace(/[^\d,]/g, ""))}
+                placeholder="60,000"
+                className="input"
+                disabled={busy}
+              />
+            </Field>
+            <Field label="Parcel type" hint="Affects the delivery quote.">
+              <div className="flex gap-2">
+                {(["regular", "large", "fragile"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setParcelSize(s)}
+                    className={`flex-1 btn ${parcelSize === s ? "btn-primary" : "btn-secondary"} text-xs capitalize`}
+                    disabled={busy}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section>
+          <h2 className="font-display text-lg text-ink-900 mb-3 flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-coral-500" />
+            Delivery quote
+          </h2>
+
+          {!customerArea ? (
+            <div className="card p-4 bg-sand-100 text-sm text-ink-500 flex items-center gap-2">
+              <Info className="w-4 h-4 shrink-0" />
+              Pick a customer area to see the auto-calculated quote.
+            </div>
+          ) : quoting ? (
+            <div className="card p-4 flex items-center gap-2 text-sm text-ink-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Calculating…
+            </div>
+          ) : quoteError ? (
+            <div className="card p-3 bg-coral-50 border-coral-200 text-sm text-coral-700 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{quoteError} (Tip: set your pickup location in Settings.)</span>
+            </div>
+          ) : quote ? (
+            <div className="card p-5 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs uppercase tracking-wider text-ink-500">
+                  Auto-quoted
+                </span>
+                <span className="font-display text-3xl tabular text-ink-900">
+                  {ugx(quote.total_ugx)}
+                </span>
+              </div>
+              <div className="text-xs text-ink-500 space-y-1">
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {quote.distance_km.toFixed(1)} km · ~{quote.estimated_minutes} min
+                </div>
+                <div className="grid grid-cols-2 gap-x-4">
+                  <span>Base fare:</span><span className="text-right tabular">{ugx(quote.base_fare_ugx)}</span>
+                  <span>Distance ({quote.distance_km.toFixed(1)} km):</span><span className="text-right tabular">{ugx(quote.distance_charge_ugx)}</span>
+                  <span>Time ({quote.estimated_minutes} min):</span><span className="text-right tabular">{ugx(quote.time_charge_ugx)}</span>
+                  {quote.parcel_supplement_ugx > 0 && (
+                    <>
+                      <span>Parcel ({parcelSize}):</span>
+                      <span className="text-right tabular">{ugx(quote.parcel_supplement_ugx)}</span>
+                    </>
+                  )}
+                  {quote.surge_multiplier !== 1.0 && (
+                    <>
+                      <span className="text-coral-600">Surge ({quote.surge_reason}):</span>
+                      <span className="text-right tabular text-coral-600">×{quote.surge_multiplier}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-sand-200 flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setIsRaining((v) => !v)}
+                  className={`btn ${isRaining ? "btn-coral" : "btn-secondary"} text-xs`}
+                  disabled={busy}
+                >
+                  <CloudRain className="w-3.5 h-3.5" />
+                  {isRaining ? "Raining now" : "It's raining"}
+                </button>
+                <span className="text-xs text-ink-500">
+                  Quote uses {customerArea}'s centre. Customer's exact pin updates the final settlement.
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           <Field
-            label="Delivery fee (UGX)"
-            hint={`Default UGX ${DEFAULT_DELIVERY_FEE.toLocaleString()}. Adjust for distance.`}
+            label="Delivery fee charged to customer"
+            hint="Auto-filled from quote. You can override (e.g. you're absorbing some)."
+            className="mt-3"
           >
             <input
               type="text"
               inputMode="numeric"
               value={deliveryFee}
               onChange={(e) => setDeliveryFee(e.target.value.replace(/[^\d,]/g, ""))}
-              placeholder="5,000"
+              placeholder="7,500"
               className="input"
               disabled={busy}
             />
           </Field>
-        </div>
+        </section>
 
-        {/* Live receipt preview */}
+        {/* Money split */}
         {itemValueNum > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-8 ledger-paper p-5"
+            className="ledger-paper p-5"
           >
             <div className="text-xs uppercase tracking-wider text-ink-500 mb-3">
               Money split
@@ -198,7 +357,7 @@ export default function NewOrderPage({ params }: { params: { id: string } }) {
           </motion.div>
         )}
 
-        <div className="mt-6 card p-4 bg-teal-50 border-teal-200">
+        <div className="card p-4 bg-teal-50 border-teal-200">
           <div className="flex items-start gap-3">
             <Info className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
             <div className="text-sm text-teal-700 leading-relaxed">
@@ -211,7 +370,7 @@ export default function NewOrderPage({ params }: { params: { id: string } }) {
         </div>
 
         {error && (
-          <div className="mt-4 card p-3 bg-coral-50 border-coral-200 text-sm text-coral-700 flex items-start gap-2">
+          <div className="card p-3 bg-coral-50 border-coral-200 text-sm text-coral-700 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -221,7 +380,7 @@ export default function NewOrderPage({ params }: { params: { id: string } }) {
           type="button"
           onClick={submit}
           disabled={busy}
-          className="btn-coral w-full justify-center text-base py-3 mt-6"
+          className="btn-coral w-full justify-center text-base py-3"
         >
           {busy ? (
             <>
@@ -241,31 +400,24 @@ export default function NewOrderPage({ params }: { params: { id: string } }) {
 }
 
 function Field({
-  label,
-  hint,
-  children,
-  className = "",
+  label, hint, className, children,
 }: {
   label: string;
   hint?: string;
-  children: React.ReactNode;
   className?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <label className={`block ${className}`}>
+    <label className={`block ${className || ""}`}>
       <div className="field-label">{label}</div>
-      {hint && <div className="field-hint mb-2">{hint}</div>}
+      {hint && <div className="field-hint mb-1.5">{hint}</div>}
       <div>{children}</div>
     </label>
   );
 }
 
 function Row({
-  label,
-  value,
-  bold,
-  muted,
-  positive,
+  label, value, bold, muted, positive,
 }: {
   label: string;
   value: string;
@@ -274,16 +426,12 @@ function Row({
   positive?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between">
-      <span className={`text-sm ${muted ? "text-ink-500" : "text-ink-900"}`}>
-        {label}
-      </span>
+    <div className="flex items-baseline justify-between text-sm">
+      <span className={muted ? "text-ink-500" : "text-ink-900"}>{label}</span>
       <span
         className={`tabular ${
-          bold ? "font-display text-lg text-ink-900" : "text-sm"
-        } ${positive ? "text-teal-700 font-semibold" : ""} ${
-          muted ? "text-ink-500" : ""
-        }`}
+          bold ? "font-display text-lg" : ""
+        } ${positive ? "text-teal-700 font-medium" : ""}`}
       >
         {value}
       </span>
@@ -292,5 +440,5 @@ function Row({
 }
 
 function Hr() {
-  return <div className="border-t border-dashed border-sand-300" />;
+  return <div className="border-t border-dashed border-ink-500/20 my-1" />;
 }

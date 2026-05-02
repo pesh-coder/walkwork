@@ -31,6 +31,8 @@ from app.db.models import (
 from app.db.schemas import (
     CustomerApproval,
     CustomerPinUpdate,
+    DeliveryQuoteRequest,
+    DeliveryQuoteOut,
     DisputeOpen,
     DisputeOut,
     FailDelivery,
@@ -71,6 +73,39 @@ def _safe_transition(order: Order, target: OrderStatus) -> None:
 
 def _customer_tracking_url(short_code: str) -> str:
     return f"{settings.public_base_url}/track/{short_code}"
+
+
+# =============================================================================
+# Delivery price quote (called by seller dashboard before they create an order)
+# =============================================================================
+@router.post("/pricing/quote", response_model=DeliveryQuoteOut)
+def quote_delivery_price(payload: DeliveryQuoteRequest, db: Session = Depends(get_db)):
+    """
+    Compute a delivery quote for a seller -> drop-off pair.
+
+    Used by the New Order form to show the seller a fair, transparent price
+    BEFORE they commit. They can override if needed.
+    """
+    from app.services import pricing as pricing_service
+
+    seller = db.query(Seller).filter(Seller.id == payload.seller_id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    if seller.pickup_lat is None or seller.pickup_lng is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This seller hasn't set their pickup location yet.",
+        )
+
+    quote = pricing_service.quote_delivery(
+        pickup_lat=seller.pickup_lat,
+        pickup_lng=seller.pickup_lng,
+        drop_lat=payload.drop_lat,
+        drop_lng=payload.drop_lng,
+        parcel_size=payload.parcel_size,
+        is_raining=payload.is_raining,
+    )
+    return DeliveryQuoteOut(**quote.to_dict())
 
 
 # =============================================================================
@@ -147,11 +182,23 @@ def track_order(short_code: str, db: Session = Depends(get_db)):
     # OTP is only revealed to the customer once they've paid into escrow
     show_otp = order.escrow_status == EscrowStatus.HELD and order.otp_code is not None
 
+    # Compute seller initials inline (kept simple to avoid an extra import)
+    def _initials(name: str) -> str:
+        parts = [p for p in (name or "").split() if p]
+        if not parts:
+            return "T"
+        if len(parts) == 1:
+            return parts[0][:2].upper()
+        return (parts[0][0] + parts[-1][0]).upper()
+
     return OrderTrackOut(
         short_code=order.short_code,
         status=order.status,
         escrow_status=order.escrow_status,
         seller_business_name=seller.business_name if seller else None,
+        seller_slug=seller.slug if seller else None,
+        seller_initials=_initials(seller.business_name) if seller else None,
+        seller_profile_color=(seller.profile_color if seller else None) or "#0E6B6B",
         rider_name=rider.full_name if rider else None,
         rider_phone=rider.phone if rider else None,
         rider_plate=rider.plate_number if rider else None,
