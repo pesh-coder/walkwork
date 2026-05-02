@@ -37,7 +37,7 @@ export default function HomePage() {
         <p className="mt-6 text-lg sm:text-xl text-ink-700 max-w-2xl leading-relaxed">
           Tukole is the delivery platform for online businesses. Trained riders,
           live tracking, and a record of every customer — so you can stop
-          chasing orders and start growing your shop.
+          chasing after deliveries and start growing your shop.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/seller/signup" className="btn-primary text-base">
